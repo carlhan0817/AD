@@ -17,3 +17,5 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = ["live: hits the real Windrun API (skipped by default)"]
+addopts = "-m 'not live'"
