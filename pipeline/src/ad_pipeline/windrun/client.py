@@ -28,5 +28,14 @@ class WindrunClient:
         assert last is not None
         last.raise_for_status()  # 抛出最终 503
 
+    def get_bytes(self, url: str) -> bytes:
+        """下载任意绝对 URL 的字节(如 datdota CDN 参考图)。
+
+        CDN 与 API 不同源,绕过 base_url,用独立请求。
+        """
+        resp = httpx.get(url, timeout=self._client.timeout, follow_redirects=True)
+        resp.raise_for_status()
+        return resp.content
+
     def close(self) -> None:
         self._client.close()
