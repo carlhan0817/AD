@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./recognition/grid": "./src/recognition/grid.ts",
     "./recognition/resize": "./src/recognition/resize.ts",
+    "./recognition/gray": "./src/recognition/gray.ts",
     "./recognition/index_store": "./src/recognition/index_store.ts",
     "./recognition/recognize": "./src/recognition/recognize.ts",
     "./recognition/phash": "./src/recognition/phash.ts",
