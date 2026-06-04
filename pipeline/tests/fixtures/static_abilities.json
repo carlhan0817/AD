@@ -1,0 +1,5 @@
+{"data":[
+ {"englishName":"Starstorm","hasScepter":false,"hasShard":false,"isUltimate":false,"ownerHeroId":9,"shortName":"mirana_starfall","tooltip":"...","valveId":5051},
+ {"englishName":"Hero: Lina","hasScepter":null,"hasShard":null,"isUltimate":null,"ownerHeroId":null,"shortName":"lina","tooltip":null,"valveId":-25},
+ {"englishName":"Hotfeet Hustle","hasScepter":false,"hasShard":false,"isUltimate":null,"ownerHeroId":null,"shortName":"largo_song_double_time","tooltip":"...","valveId":1664}
+]}

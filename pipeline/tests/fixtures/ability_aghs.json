@@ -1,0 +1,4 @@
+{"data":{"patches":{"overall":["7.41b"]},"abilityAghs":[
+ {"abilityId":-155,"totalGames":48813,
+  "noAghsScepter":{"winrate":0.5034638246},"aghsScepter":{"winrate":0.5778933574},
+  "noAghsShard":{"winrate":0.5242709224},"aghsShard":{"winrate":0.5707985144}}]}}
