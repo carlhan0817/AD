@@ -11,6 +11,13 @@
     "./recognition/index_store": "./src/recognition/index_store.ts",
     "./recognition/recognize": "./src/recognition/recognize.ts",
     "./recognition/phash": "./src/recognition/phash.ts",
+    "./recognition/frame_diff": "./src/recognition/frame_diff.ts",
+    "./recognition/roi": "./src/recognition/roi.ts",
+    "./recognition/layout_guard": "./src/recognition/layout_guard.ts",
+    "./recognition/active_picker": "./src/recognition/active_picker.ts",
+    "./statemachine/quota": "./src/statemachine/quota.ts",
+    "./statemachine/reconcile": "./src/statemachine/reconcile.ts",
+    "./statemachine/draft": "./src/statemachine/draft.ts",
     "./db/reference": "./src/db/reference.ts"
   },
   "scripts": { "test": "vitest run", "typecheck": "tsc --noEmit" },

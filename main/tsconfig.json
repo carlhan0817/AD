@@ -9,7 +9,8 @@
     "types": ["node"],
     "outDir": "dist",
     "paths": {
-      "@ad/core/*": ["../core/src/*"]
+      "@ad/core/*": ["../core/src/*"],
+      "@ad/shared/*": ["../shared/*"]
     }
   },
   "include": ["src", "tests"]
