@@ -1,0 +1,9 @@
+{
+  "name": "@ad/shared",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "types/index.ts",
+  "exports": {
+    "./types/draft": "./types/draft.ts"
+  }
+}
