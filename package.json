@@ -1,0 +1,14 @@
+{
+  "name": "ad-draft-assistant",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["shared", "core", "main", "renderer", "app"],
+  "scripts": {
+    "dev": "npm run dev --workspace app",
+    "test:core": "npm test --workspace core",
+    "test:main": "npm test --workspace main",
+    "test:renderer": "npm test --workspace renderer",
+    "test:app": "npm test --workspace app",
+    "test:ts": "npm run test:core && npm run test:main && npm run test:renderer && npm run test:app"
+  }
+}
