@@ -4,6 +4,8 @@
   "type": "module",
   "main": "types/index.ts",
   "exports": {
-    "./types/draft": "./types/draft.ts"
+    "./types/draft": "./types/draft.ts",
+    "./types/scoring": "./types/scoring.ts",
+    "./types/ipc": "./types/ipc.ts"
   }
 }
