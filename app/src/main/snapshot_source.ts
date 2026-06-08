@@ -14,6 +14,8 @@ export interface SnapshotSource {
 }
 
 // 两帧 fixture:模拟"先英雄候选、再技能候选"的推荐变化,让 overlay 真正动起来。
+// 注:真实对局 players 长度为 10;此处为 mock 仅放 1 行(Overlay 渲染只读
+// recommendations / remaining,不遍历全部 10 行),刻意截断,非遗漏。
 const STATE_A: DraftState = {
   activeRow: 0,
   players: [{ row: 0, hero: null, normals: [], ultimates: [] }],
