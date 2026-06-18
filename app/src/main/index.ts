@@ -35,22 +35,31 @@ function resolveModelPaths(): { index: string; db: string } {
 /** 包装 runMonitorLoop 为 LiveDeps.runLoop:构造 MonitorDeps(候选池暂留空,见文件头注释),
  *  fire-and-forget 启动(runMonitorLoop 是不会 resolve 的 while(true) 循环,无内建取消)。
  *  返回的停止函数是"最佳努力":并不能真正中断 runMonitorLoop 内部的轮询,
- *  而是置位 stopped 标记并让 onUpdate 在标记后短路,从而停止向 overlay 继续推送。 */
+ *  而是置位 stopped 标记并让 onUpdate 在标记后短路,从而停止向 overlay 继续推送。
+ *  loadIndex/ReferenceDb 在模型资产缺失或损坏时会同步抛出;此调用发生在
+ *  did-finish-load 之后(窗口已显示),若不捕获会在主进程内成为未捕获异常,
+ *  导致 overlay 永久空白且无诊断信息。因此整体 try/catch:失败时打印明确的
+ *  console.error 并返回一个 no-op 停止函数,让 overlay 优雅降级(保持显示,但不推送数据)。 */
 function startLiveLoop(onUpdate: (state: DraftState, activeRow: number, recs: ScoredCandidate[]) => void): () => void {
-  const { index: indexPath, db: dbPath } = resolveModelPaths();
-  const index = loadIndex(indexPath);
-  const ref = new ReferenceDb(dbPath);
-  let stopped = false;
-  const deps: MonitorDeps = {
-    index,
-    ref,
-    pool: [], // 已知限制:候选池来源尚未接入,留空 → recommend 在空池上恒返回 []
-    dbPath,
-    cfg: defaultScoringConfig(),
-    onUpdate: (state, activeRow, recs) => { if (!stopped) onUpdate(state, activeRow, recs); },
-  };
-  runMonitorLoop(deps).catch((err) => console.error("runMonitorLoop failed:", err));
-  return () => { stopped = true; };
+  try {
+    const { index: indexPath, db: dbPath } = resolveModelPaths();
+    const index = loadIndex(indexPath);
+    const ref = new ReferenceDb(dbPath);
+    let stopped = false;
+    const deps: MonitorDeps = {
+      index,
+      ref,
+      pool: [], // 已知限制:候选池来源尚未接入,留空 → recommend 在空池上恒返回 []
+      dbPath,
+      cfg: defaultScoringConfig(),
+      onUpdate: (state, activeRow, recs) => { if (!stopped) onUpdate(state, activeRow, recs); },
+    };
+    runMonitorLoop(deps).catch((err) => console.error("runMonitorLoop failed:", err));
+    return () => { stopped = true; };
+  } catch (err) {
+    console.error("[live] failed to start monitor loop (missing/invalid model assets?):", err);
+    return () => {};
+  }
 }
 
 function createOverlayWindow(): BrowserWindow {

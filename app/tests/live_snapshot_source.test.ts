@@ -1,5 +1,5 @@
 // app/tests/live_snapshot_source.test.ts
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { machineToSnapshot } from "../src/main/live_snapshot_source";
 
 describe("machineToSnapshot", () => {

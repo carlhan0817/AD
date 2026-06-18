@@ -23,9 +23,9 @@ Report 'brand cast outside main/src/ffi/' (
     Select-String -Pattern $brandCast | ForEach-Object { "$($_.Path):$($_.LineNumber): $($_.Line.Trim())" })
 
 # A1: write APIs must not appear outside the overlay_window_ctl module.
-$writeApi = 'SetWindowPos|SetWindowLong|SetWindowLongPtr|SetWindowDisplayAffinity|\bShowWindow\b|\bMoveWindow\b'
+$writeApi = 'SetWindowPos|SetWindowLong|SetWindowLongPtr|SetWindowDisplayAffinity|\bShowWindow\b|\bMoveWindow\b|\bSendMessage\b|\bPostMessage\b'
 Report 'Win32 write API outside overlay_window_ctl.ts' (
-  $srcTs | Where-Object { $_.FullName -notmatch 'overlay_window_ctl\.ts$' } |
+  $srcTs | Where-Object { $_.FullName -notmatch '\\main\\src\\ffi\\overlay_window_ctl\.ts$' } |
     Select-String -Pattern $writeApi | ForEach-Object { "$($_.Path):$($_.LineNumber): $($_.Line.Trim())" })
 
 if ($fail) { Write-Host "`nCOMPLIANCE SCAN FAILED" -ForegroundColor Red; exit 1 }
