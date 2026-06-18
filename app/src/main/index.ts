@@ -4,11 +4,12 @@
 //   把 MockSnapshotSource 换成包装 main 包 runMonitorLoop 的 LiveSnapshotSource,
 //   其 onUpdate(machine) 内调 recommend + buildSnapshot 后经同一 emit 推送;
 //   届时需:① main/loop.ts 的 onUpdate 补传 pool: Candidate[];② electron-rebuild
-//   better-sqlite3;③ koffi 窗口追踪 + setIgnoreMouseEvents 穿透。本阶段全部不做。
+//   better-sqlite3。overlay 置顶 + 穿透已接 koffi own-hwnd 控制模块(本阶段完成)。
 import { app, BrowserWindow } from "electron";
 import { join } from "node:path";
 import { OVERLAY_CHANNEL } from "@ad/shared/types/ipc";
 import { MockSnapshotSource } from "./snapshot_source";
+import { setOverlayClickThrough, raiseOverlayZOrder } from "@ad/main/ffi/overlay_window_ctl";
 
 function createOverlayWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -23,7 +24,9 @@ function createOverlayWindow(): BrowserWindow {
       contextIsolation: true,
     },
   });
-  // 本阶段不做 setIgnoreMouseEvents 穿透与窗口追踪(koffi,下一阶段)。
+  win.setAlwaysOnTop(true, "screen-saver");
+  setOverlayClickThrough(win);
+  win.once("ready-to-show", () => raiseOverlayZOrder(win));
   if (process.env.ELECTRON_RENDERER_URL) {
     win.loadURL(process.env.ELECTRON_RENDERER_URL);
   } else {

@@ -7,6 +7,7 @@ const alias = {
   "@ad/shared": fileURLToPath(new URL("../shared", import.meta.url)),
   "@ad/core": fileURLToPath(new URL("../core/src", import.meta.url)),
   "@ad/renderer": fileURLToPath(new URL("../renderer/src", import.meta.url)),
+  "@ad/main": fileURLToPath(new URL("../main/src", import.meta.url)),
 };
 
 export default defineConfig({
