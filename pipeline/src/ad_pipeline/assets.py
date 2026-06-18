@@ -32,12 +32,26 @@ def build_asset_manifest(abilities: list[dict], heroes: dict) -> list[dict]:
     return manifest
 
 
-def download_manifest(manifest: list[dict], out_dir: Path, client) -> int:
-    """实际下载。client.get_bytes(url)->bytes。返回写入数。仅 cli --download 调用。"""
-    n = 0
+def download_manifest(manifest: list[dict], out_dir: Path, client) -> dict:
+    """实际下载。client.get_bytes(url)->bytes。
+
+    单个 url 失败(404/超时/任何异常)不中断整体下载:捕获、记录、跳过,继续下一个。
+    AD 的 abilities 表里有大量已废弃/未启用技能,其 sprite 在 CDN 上大概率 404,
+    若不容错会让整个 build-index 因一张图崩掉。
+
+    返回 {"downloaded": int, "failed": [{"key","url","reason"}, ...]}。
+    """
+    downloaded = 0
+    failed: list[dict] = []
     for m in manifest:
+        try:
+            data = client.get_bytes(m["url"])
+        except Exception as exc:  # noqa: BLE001 - 任何下载异常都不应中断整体流程
+            print(f"[download_manifest] WARN skip {m['key']} ({m['url']}): {exc}")
+            failed.append({"key": m["key"], "url": m["url"], "reason": str(exc)})
+            continue
         dest = out_dir / m["filename"]
         dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(client.get_bytes(m["url"]))
-        n += 1
-    return n
+        dest.write_bytes(data)
+        downloaded += 1
+    return {"downloaded": downloaded, "failed": failed}

@@ -50,3 +50,41 @@ def test_build_index_command_writes_index(tmp_path):
     # sprite 文件实际落盘
     assert (sprites / "ability" / "mirana_starfall.png").exists()
     assert (sprites / "hero" / "mirana.png").exists()
+
+
+def test_build_index_command_winrate_only_excludes_abilities_without_winrate(tmp_path):
+    db = tmp_path / "reference.db"
+    create_db(db)
+    upsert_abilities(db, [{
+        "valveId": 5051, "shortName": "mirana_starfall", "englishName": "Starstorm",
+        "slot_type": "normal", "is_ultimate": False, "has_scepter": False,
+        "has_shard": False, "owner_hero_id": 9, "needs_review": 0,
+    }, {
+        "valveId": 6051, "shortName": "dead_ability", "englishName": "Dead Ability",
+        "slot_type": "normal", "is_ultimate": False, "has_scepter": False,
+        "has_shard": False, "owner_hero_id": None, "needs_review": 0,
+    }, {
+        "valveId": -9, "shortName": "mirana", "englishName": "Hero: Mirana",
+        "slot_type": "hero", "is_ultimate": None, "has_scepter": None,
+        "has_shard": None, "owner_hero_id": None, "needs_review": 0,
+    }])
+    upsert_heroes(db, {9: {"id": 9, "shortName": "mirana",
+                          "englishName": "Mirana", "picture": "mirana"}})
+    # 只给 mirana_starfall (valve_id 5051) 写胜率行;dead_ability (6051) 没有
+    conn = sqlite3.connect(db)
+    conn.execute(
+        "INSERT INTO ability_winrate (ability_id, patch, num_picks, wins, winrate) "
+        "VALUES (5051, '7.36', 100, 50, 0.5)")
+    conn.commit()
+    conn.close()
+
+    sprites = tmp_path / "sprites"
+    index_out = tmp_path / "phash_index.json"
+    build_index_command(db, sprites, index_out, FakeClient(), winrate_only=True)
+
+    data = json.loads(index_out.read_text(encoding="utf-8"))
+    by_id = {e["valveId"]: e for e in data}
+    # 有胜率的技能 + 全部英雄都进索引;无胜率的技能被排除
+    assert 5051 in by_id
+    assert -9 in by_id
+    assert 6051 not in by_id

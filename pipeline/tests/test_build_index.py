@@ -39,3 +39,20 @@ def test_build_index_writes_entries(tmp_path):
     by_id = {e["valveId"]: e for e in data}
     assert set(by_id) == {5051, -9}
     assert len(by_id[5051]["phash"]) == 16
+
+
+def test_build_index_skips_entry_with_missing_or_unreadable_file(tmp_path):
+    """单 entry 读图失败(例如 sprite 没下成功、文件不存在)不应中断整体建索引。"""
+    a = tmp_path / "mirana_starfall.png"
+    _make_png(a, (200, 50, 50))
+    missing = tmp_path / "does_not_exist.png"  # 未下载成功的 sprite
+    entries = [
+        {"valveId": 5051, "shortName": "mirana_starfall", "path": str(a)},
+        {"valveId": 9999, "shortName": "dead_ability", "path": str(missing)},
+    ]
+    out = tmp_path / "phash_index.json"
+    build_index_from_files(entries, out)
+    data = json.loads(out.read_text())
+    by_id = {e["valveId"]: e for e in data}
+    assert set(by_id) == {5051}
+    assert 9999 not in by_id

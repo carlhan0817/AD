@@ -53,18 +53,28 @@ def _set_meta(db_path: Path, key: str, value: str) -> None:
         conn.close()
 
 
-def _read_index_entries(db_path: Path, sprites_dir: Path) -> tuple[list[dict], list[dict]]:
+def _read_index_entries(db_path: Path, sprites_dir: Path,
+                         winrate_only: bool = False) -> tuple[list[dict], list[dict]]:
     """从 reference.db 读 abilities+heroes,拼出 build_index 用的 entries。
 
     abilities 中真实技能 → ability sprite(正 valveId);英雄行(slot_type='hero',
     负 valveId)→ mini 头像;valveId 与 sprite 文件名一一对应(见 assets.build_asset_manifest)。
+
+    winrate_only=True 时,abilities 只取在 ability_winrate 表里有记录的子集
+    (reference.db 里大量 valve_id 是已废弃/未启用技能,AD 模式不会出现,且其 sprite
+    在 CDN 上大概率 404)。英雄始终全量保留。
     """
     import sqlite3
     conn = sqlite3.connect(db_path)
     try:
+        if winrate_only:
+            ability_sql = ("SELECT short_name, slot_type FROM abilities "
+                           "WHERE valve_id IN (SELECT ability_id FROM ability_winrate)")
+        else:
+            ability_sql = "SELECT short_name, slot_type FROM abilities"
         abilities = [
             {"shortName": sn, "slot_type": st}
-            for sn, st in conn.execute("SELECT short_name, slot_type FROM abilities")
+            for sn, st in conn.execute(ability_sql)
         ]
         # valveId 按 short_name 反查(英雄行用负 valveId)
         valve_by_short = {
@@ -89,10 +99,17 @@ def _read_index_entries(db_path: Path, sprites_dir: Path) -> tuple[list[dict], l
     return entries, manifest
 
 
-def build_index_command(db_path: Path, sprites_dir: Path, index_out: Path, client) -> None:
-    entries, manifest = _read_index_entries(db_path, sprites_dir)
-    assets.download_manifest(manifest, sprites_dir, client)
-    build_index_from_files(entries, index_out)
+def build_index_command(db_path: Path, sprites_dir: Path, index_out: Path, client,
+                         winrate_only: bool = False) -> dict:
+    entries, manifest = _read_index_entries(db_path, sprites_dir, winrate_only=winrate_only)
+    download_result = assets.download_manifest(manifest, sprites_dir, client)
+    index = build_index_from_files(entries, index_out)
+    summary = {"downloaded": download_result["downloaded"],
+               "failed": len(download_result["failed"]),
+               "indexed": len(index)}
+    print(f"download: {summary['downloaded']} ok, {summary['failed']} failed; "
+          f"index: {summary['indexed']} entries written")
+    return summary
 
 
 def main(argv=None) -> int:
@@ -106,6 +123,8 @@ def main(argv=None) -> int:
     bi.add_argument("--db", type=Path, default=Path("out/reference.db"))
     bi.add_argument("--sprites", type=Path, default=Path("../models/templates/sprites"))
     bi.add_argument("--index-out", type=Path, default=Path("../models/templates/phash_index.json"))
+    bi.add_argument("--winrate-only", action="store_true",
+                     help="只下载/索引有胜率数据的技能子集(+全部英雄),跳过废弃技能")
 
     args = p.parse_args(argv)
     if args.cmd == "build":
@@ -119,7 +138,8 @@ def main(argv=None) -> int:
     elif args.cmd == "build-index":
         client = WindrunClient()
         try:
-            build_index_command(args.db, args.sprites, args.index_out, client)
+            build_index_command(args.db, args.sprites, args.index_out, client,
+                                 winrate_only=args.winrate_only)
         finally:
             client.close()
         print(f"built index {args.index_out}")
