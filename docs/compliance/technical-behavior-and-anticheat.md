@@ -35,11 +35,11 @@
 
 ## 2. 四个技术模块 — 逐个 API 标注
 
-### 2.1 截屏(DXGI Desktop Duplication)
-- **API**:DXGI Desktop Duplication(`IDXGIOutputDuplication`)。
+### 2.1 截屏(Electron `desktopCapturer`,必要时升级 DXGI Desktop Duplication)
+- **API**:起步用 Electron `desktopCapturer`(无边框基准下只读屏幕帧);若无边框下仍不足,升级 DXGI Desktop Duplication(`IDXGIOutputDuplication`)。
 - **做什么**:抓**显卡合成后的整屏最终画面帧**,得到位图。
 - **对游戏的影响**:**无任何交互**——不附加进程、不读内存、不 hook 渲染。等价于系统级截图(OBS / NVIDIA 录屏 / 直播软件同一类机制)。
-- **为何不用 `screenshot-desktop`**:其底层 GDI 在全屏下常截黑屏;DXGI 是只读屏幕帧的稳定路径。
+- **为何不用 `screenshot-desktop`**:其底层 GDI 在全屏下常截黑屏;`desktopCapturer`/DXGI 是只读屏幕帧的稳定路径。
 - **合规自评**:✅ 抓屏本身几乎所有反作弊都允许(否则会误伤直播/录屏/截图工具)。
 
 ### 2.2 找游戏窗口位置(koffi → user32.dll,**全程只读**)
