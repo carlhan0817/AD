@@ -13,7 +13,8 @@
     "paths": {
       "@ad/core/*": ["../core/src/*"],
       "@ad/shared/*": ["../shared/*"],
-      "@ad/renderer/*": ["../renderer/src/*"]
+      "@ad/renderer/*": ["../renderer/src/*"],
+      "@ad/main/*": ["../main/src/*"]
     }
   },
   "include": ["src", "tests"]

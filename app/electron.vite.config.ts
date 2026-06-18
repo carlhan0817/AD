@@ -1,5 +1,5 @@
 // app/electron.vite.config.ts
-import { defineConfig } from "electron-vite";
+import { defineConfig, externalizeDepsPlugin } from "electron-vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 
@@ -7,14 +7,20 @@ const alias = {
   "@ad/shared": fileURLToPath(new URL("../shared", import.meta.url)),
   "@ad/core": fileURLToPath(new URL("../core/src", import.meta.url)),
   "@ad/renderer": fileURLToPath(new URL("../renderer/src", import.meta.url)),
+  "@ad/main": fileURLToPath(new URL("../main/src", import.meta.url)),
 };
 
 export default defineConfig({
-  main: { resolve: { alias }, build: { rollupOptions: { input: "src/main/index.ts" } } },
+  main: {
+    resolve: { alias },
+    plugins: [externalizeDepsPlugin()],
+    build: { rollupOptions: { input: "src/main/index.ts" } },
+  },
   // 强制 preload 输出为 .js(CJS):包是 "type":"module",默认会出 .mjs,
   // 而 main 进程按 ../preload/index.js 引用——Electron preload 沙箱也更稳用 CJS。
   preload: {
     resolve: { alias },
+    plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
         input: "src/preload/index.ts",

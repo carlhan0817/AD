@@ -7,14 +7,19 @@ import { recognizeCell } from "@ad/core/recognition/recognize";
 import { type IndexEntry } from "@ad/core/recognition/index_store";
 import { ReferenceDb } from "@ad/core/db/reference";
 import { DraftMachine } from "@ad/core/statemachine/draft";
-import type { FrameObservation, SlotType } from "@ad/shared/types/draft";
-import { captureGrayFrame } from "./frame_source";
+import { recommend } from "@ad/core/scoring/recommend";
+import type { DraftState, FrameObservation, SlotType } from "@ad/shared/types/draft";
+import type { Candidate, ScoredCandidate, ScoringConfig } from "@ad/shared/types/scoring";
+import { captureScreenGrayFrame } from "./screen_source";
 import type { GrayFrame } from "@ad/core/recognition/grid";
 
 export interface MonitorDeps {
   index: IndexEntry[];
   ref: ReferenceDb;
-  onUpdate: (machine: DraftMachine) => void;
+  pool: Candidate[];
+  dbPath: string;
+  cfg: ScoringConfig;
+  onUpdate: (state: DraftState, activeRow: number, recs: ScoredCandidate[]) => void;
 }
 
 /** 把一帧识别成 FrameObservation。Active Picker 需 RGB 带 —— 本 MVP 先留 null
@@ -42,12 +47,18 @@ export async function runMonitorLoop(deps: MonitorDeps, intervalMs = 250): Promi
   const machine = new DraftMachine(slotTypeOf, { confirmFrames: 3 });
 
   const tick = async () => {
-    const frame = await captureGrayFrame();
+    const frame = await captureScreenGrayFrame();
     const rois = diffRois(frame, LAYOUT_1080P);
     if (!gate.shouldProcess(rois)) return;            // 第一层:frame-diff 门控
     if (!isValidLayout([rois[0], rois[2]])) return;   // 第二层:布局/遮挡校验
     const obs = recognizeFrame(frame, deps);
-    if (machine.observe(obs)) deps.onUpdate(machine);  // 第三/四层在 machine 内
+    if (!machine.observe(obs)) return;                 // 第三/四层在 machine 内
+    const state = machine.state();
+    const activeRow = state.activeRow;
+    if (activeRow === null) return;                    // 无活动玩家,本帧不打分
+    const me = state.players[activeRow];
+    const recs = recommend(deps.pool, me, activeRow, deps.dbPath, deps.cfg);
+    deps.onUpdate(state, activeRow, recs);
   };
 
   // 简单定时轮询;真正的生命周期/停止条件在阶段 4 接 overlay 时细化。

@@ -9,6 +9,7 @@
     "test:main": "npm test --workspace main",
     "test:renderer": "npm test --workspace renderer",
     "test:app": "npm test --workspace app",
-    "test:ts": "npm run test:core && npm run test:main && npm run test:renderer && npm run test:app"
+    "test:ts": "npm run test:core && npm run test:main && npm run test:renderer && npm run test:app",
+    "compliance": "powershell -ExecutionPolicy Bypass -File scripts/compliance-scan.ps1"
   }
 }
