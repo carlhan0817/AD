@@ -1,6 +1,6 @@
 // core/tests/scoring/data.test.ts
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import Database from "better-sqlite3";
+import { Database } from "node-sqlite3-wasm";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmSync } from "node:fs";
@@ -21,10 +21,10 @@ beforeAll(() => {
       num_picks INTEGER, wins INTEGER, winrate REAL, PRIMARY KEY (ability_id_one, ability_id_two));
     CREATE TABLE ability_aghs (ability_id INTEGER PRIMARY KEY, scepter_gain REAL, shard_gain REAL);
   `);
-  db.prepare("INSERT INTO ability_winrate VALUES (5051,'p',10,5,0.55,8.4,0.9)").run();
-  db.prepare("INSERT INTO hero_winrate VALUES (9,'p',1,2,0.52)").run();
-  db.prepare("INSERT INTO ability_pairs VALUES (-9,5051,10,6,0.57)").run();
-  db.prepare("INSERT INTO ability_aghs VALUES (5051,0.078,0.047)").run();
+  db.run("INSERT INTO ability_winrate VALUES (5051,'p',10,5,0.55,8.4,0.9)");
+  db.run("INSERT INTO hero_winrate VALUES (9,'p',1,2,0.52)");
+  db.run("INSERT INTO ability_pairs VALUES (-9,5051,10,6,0.57)");
+  db.run("INSERT INTO ability_aghs VALUES (5051,0.078,0.047)");
   db.close();
 });
 afterAll(() => rmSync(dbPath, { force: true }));

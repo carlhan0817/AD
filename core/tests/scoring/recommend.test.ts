@@ -1,6 +1,6 @@
 // core/tests/scoring/recommend.test.ts
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import Database from "better-sqlite3";
+import { Database } from "node-sqlite3-wasm";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmSync } from "node:fs";
@@ -22,10 +22,10 @@ beforeAll(() => {
   `);
   // 6 个普通候选,胜率递减,确保 Top-K 截断可验
   for (let i = 0; i < 6; i++) {
-    db.prepare("INSERT INTO ability_winrate VALUES (?,?,?,?,?,?,?)").run(5050 + i, "p", 10, 5, 0.6 - i * 0.02, 5, 0.9);
+    db.run("INSERT INTO ability_winrate VALUES (?,?,?,?,?,?,?)", [5050 + i, "p", 10, 5, 0.6 - i * 0.02, 5, 0.9]);
   }
-  db.prepare("INSERT INTO ability_winrate VALUES (6001,'p',10,5,0.59,3,0.9)").run();
-  db.prepare("INSERT INTO ability_pairs VALUES (-9,5050,10,6,0.57)").run();
+  db.run("INSERT INTO ability_winrate VALUES (6001,'p',10,5,0.59,3,0.9)");
+  db.run("INSERT INTO ability_pairs VALUES (-9,5050,10,6,0.57)");
   db.close();
 });
 afterAll(() => rmSync(dbPath, { force: true }));

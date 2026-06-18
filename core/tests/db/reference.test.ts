@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import Database from "better-sqlite3";
+import { Database } from "node-sqlite3-wasm";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmSync } from "node:fs";
@@ -12,8 +12,8 @@ beforeAll(() => {
   db.exec(`CREATE TABLE abilities (valve_id INTEGER PRIMARY KEY, short_name TEXT,
     english_name TEXT, slot_type TEXT, is_ultimate INTEGER, has_scepter INTEGER,
     has_shard INTEGER, owner_hero_id INTEGER, needs_review INTEGER)`);
-  db.prepare(`INSERT INTO abilities VALUES (5048,'mirana_arrow','Sacred Arrow','ultimate',1,1,0,9,0)`).run();
-  db.prepare(`INSERT INTO abilities VALUES (-9,'mirana','Hero: Mirana','hero',null,null,null,null,0)`).run();
+  db.run(`INSERT INTO abilities VALUES (5048,'mirana_arrow','Sacred Arrow','ultimate',1,1,0,9,0)`);
+  db.run(`INSERT INTO abilities VALUES (-9,'mirana','Hero: Mirana','hero',null,null,null,null,0)`);
   db.close();
 });
 afterAll(() => rmSync(dbPath, { force: true }));
