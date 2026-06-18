@@ -1,6 +1,7 @@
 // core/tests/scoring/data.test.ts
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { Database } from "node-sqlite3-wasm";
+import pkg from "node-sqlite3-wasm";
+const { Database } = pkg;
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmSync } from "node:fs";

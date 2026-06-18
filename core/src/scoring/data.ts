@@ -1,6 +1,8 @@
 // core/src/scoring/data.ts
 // 从 reference.db 只读构建 ScoringContext。signal 不碰 DB —— 数据在此一次性备齐。
-import { Database } from "node-sqlite3-wasm";
+// node-sqlite3-wasm 是 CJS,只有 default 导出;具名导入在 Electron 严格 ESM 下会失败。
+import pkg from "node-sqlite3-wasm";
+const { Database } = pkg;
 import type { ScoringContext, WinrateRow, AghsRow } from "@ad/shared/types/scoring";
 import type { PlayerState } from "@ad/shared/types/draft";
 import { pairKey } from "./signals/synergy";

@@ -1,4 +1,9 @@
-import { Database } from "node-sqlite3-wasm";
+// node-sqlite3-wasm 是 CommonJS 模块,只有 default 导出;具名导入 { Database } 在
+// Electron 的严格 ESM 加载下会抛 "Named export 'Database' not found"(虽然 Node 单测
+// 的 CJS 互操作宽松、能过)。故统一 default 导入后解构,值与类型两用。
+import pkg from "node-sqlite3-wasm";
+const { Database } = pkg;
+type Database = InstanceType<typeof Database>;
 
 export type SlotType = "hero" | "normal" | "ultimate";
 
