@@ -62,6 +62,7 @@ function startLiveLoop(onUpdate: (state: DraftState, activeRow: number, recs: Sc
       ref,
       pool: [], // 已知限制:候选池来源尚未接入,留空 → recommend 在空池上恒返回 []
       cfg: defaultScoringConfig(),
+      log: diag, // 诊断:把循环每道门的状态落 .live.log,定位真机识别卡在哪道门
       onUpdate: (state, activeRow, recs) => {
         if (stopped) return;
         if (++updates <= 3) diag(`[live] update#${updates} activeRow=${activeRow} recs=${recs.length}`);
