@@ -5,6 +5,7 @@ import pkg from "node-sqlite3-wasm";
 const { Database } = pkg;
 type Database = InstanceType<typeof Database>;
 import type { Queryable } from "@ad/shared/types/db";
+import { rmSync, existsSync } from "node:fs";
 
 export type SlotType = "hero" | "normal" | "ultimate";
 
@@ -15,8 +16,58 @@ export type SlotType = "hero" | "normal" | "ultimate";
 export class ReferenceDb implements Queryable {
   private db: Database;
   constructor(path: string) {
-    this.db = new Database(path, { readOnly: true });  // 只读消费(计划书 §三)
+    this.db = ReferenceDb.openWithStaleLockRecovery(path);
   }
+
+  /** node-sqlite3-wasm 用文件系统上的一个锁目录 `<path>.lock` 做互斥(mkdir 加锁 /
+   *  rmdir 解锁,见其 VFS 实现 _nodejsLock/_nodejsUnlock)。若上一个持有连接的进程
+   *  异常退出(被 locked 崩掉、被强杀等),这个锁目录不会被 rmdir,残留在磁盘上 ——
+   *  下次启动时,哪怕只有这一个(只读)连接,首次访问(prepare/get/all,不是
+   *  构造函数本身)也会因为 mkdir EEXIST 而抛 `SQLite3Error: database is locked`。
+   *  这是陈旧锁(stale lock),不是真实并发冲突。
+   *
+   *  韧性策略:构造后立刻用一次轻量探测查询(对 sqlite_master 的 SELECT,任何合法
+   *  sqlite 文件都有这张表,空库也不例外)强制触发首次加锁路径。若探测命中
+   *  "database is locked",就认为撞上了陈旧锁:关闭当前连接、删除锁目录、重新开库
+   *  再探测一次。最多重试一次 —— 仍失败就把错误抛出去,交给上层 startLiveLoop 的
+   *  try/catch 诊断并降级。
+   *
+   *  安全边界:盲删锁目录在"多个进程合法并发持有同一把锁"的场景下是危险的——会
+   *  误删别的活进程正持有的锁,导致该进程后续写入语义被破坏。但本应用对 reference.db
+   *  是单进程只读消费(计划书 §三),不存在合法的多进程并发写者;且这里只在已经
+   *  实际撞上 "database is locked" 之后才清理,不是无条件清理。若未来出现合法的
+   *  多进程并发(例如多个 app 实例或独立的写者),这个清理策略需要重新评估
+   *  (例如改为基于锁文件 mtime 的陈旧判定,而不是"撞锁就删")。 */
+  private static openWithStaleLockRecovery(path: string): Database {
+    const probe = (db: Database): void => {
+      db.all("SELECT name FROM sqlite_master LIMIT 1");
+    };
+
+    let db = new Database(path, { readOnly: true });
+    try {
+      probe(db);
+      return db;
+    } catch (err) {
+      if (!ReferenceDb.isDatabaseLockedError(err)) throw err;
+
+      try { db.close(); } catch { /* close 本身也可能抛,忽略 */ }
+
+      const lockPath = `${path}.lock`;
+      if (existsSync(lockPath)) {
+        console.warn(`[ReferenceDb] 检测到陈旧锁目录,清理后重试一次: ${lockPath}`);
+        rmSync(lockPath, { recursive: true, force: true });
+      }
+
+      db = new Database(path, { readOnly: true });
+      probe(db); // 仍然 locked 则在此抛出,不再重试(最多重试一次)
+      return db;
+    }
+  }
+
+  private static isDatabaseLockedError(err: unknown): boolean {
+    return err instanceof Error && err.message.includes("database is locked");
+  }
+
   slotType(valveId: number): SlotType | null {
     const stmt = this.db.prepare("SELECT slot_type FROM abilities WHERE valve_id = ?");
     try {

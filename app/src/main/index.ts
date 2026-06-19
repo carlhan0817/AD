@@ -70,7 +70,11 @@ function startLiveLoop(onUpdate: (state: DraftState, activeRow: number, recs: Sc
     };
     runMonitorLoop(deps).catch((err) => diag(`[live] runMonitorLoop failed: ${err}`));
     diag("[live] monitor loop started");
-    return () => { stopped = true; };
+    // 停止时除了置位 stopped 标记,还要 close 这个长连接,释放它持有的
+    // node-sqlite3-wasm 锁目录(<dbpath>.lock)。否则正常退出(window-all-closed →
+    // source.stop())也不会 rmdir 锁目录,下次启动就会撞上陈旧锁而 "database is locked"
+    // ——即使是干净退出也必须显式 close,因为 ref 只在这个闭包里,外部拿不到引用。
+    return () => { stopped = true; try { ref.close(); } catch { /* 忽略关闭期错误 */ } };
   } catch (err) {
     diag(`[live] failed to start monitor loop (missing/invalid model assets?): ${err}`);
     return () => {};
