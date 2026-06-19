@@ -31,9 +31,33 @@ describe("roi layout", () => {
     expect(rows[0].abilities[0].length).toBe(32);
   });
 
-  it("diffRois returns the gate-watched sub-blocks (pool + slots + timer)", () => {
+  it("diffRois returns { diff: [pool, slots], anchors: [pool, timer] }", () => {
     const rois = diffRois(frame(1920, 1080), LAYOUT_1080P);
-    expect(rois.length).toBeGreaterThanOrEqual(3);
-    expect(Array.isArray(rois[0])).toBe(true);
+    expect(rois.diff.length).toBe(2);      // pool + slots(不含 timer)
+    expect(rois.anchors.length).toBe(2);   // pool + timer(锚点校验用)
+    expect(Array.isArray(rois.diff[0])).toBe(true);
+    expect(Array.isArray(rois.anchors[0])).toBe(true);
+  });
+
+  it("diff 部分不受 timer 跳动影响:timer 变化时 pool/slots 的 hash 应保持不变", () => {
+    // 构造两帧:pool/slots 区域像素完全相同,只有 timer 区域(倒计时数字)变化。
+    // 这是核心证据:FrameGate 吃 rois.diff 时,timer 跳动不应打断「连续静止」判定。
+    const f1 = frame(1920, 1080);
+    const f2 = frame(1920, 1080);
+    const t = LAYOUT_1080P.timer;
+    // 仅改 f2 的 timer 区域像素(模拟倒计时数字跳动)。
+    for (let y = t.y; y < t.y + t.h; y++) {
+      for (let x = t.x; x < t.x + t.w; x++) {
+        f2.data[y * f2.width + x] = 255;
+      }
+    }
+
+    const r1 = diffRois(f1, LAYOUT_1080P);
+    const r2 = diffRois(f2, LAYOUT_1080P);
+
+    // diff 部分(pool+slots)两帧应逐块相同(timer 不在其中,不受影响)。
+    expect(r1.diff).toEqual(r2.diff);
+    // anchors 部分(pool+timer)应能体现出 timer 已变化(第二块不同)。
+    expect(r1.anchors[1]).not.toEqual(r2.anchors[1]);
   });
 });

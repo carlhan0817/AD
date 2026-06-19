@@ -60,13 +60,25 @@ export function slotRowCells(frame: GrayFrame, layout: DraftLayout): SlotRowCell
   return out;
 }
 
+/** diffRois 的具名返回结构,解耦「静止判据」与「锚点校验」两种用途:
+ *  - diff: 喂 FrameGate.shouldProcess 的稳定判据块。**不含 timer**——
+ *    timer 是回合倒计时,每秒跳动,若混入静止判据会导致画面永远「在动」、永不放行稳定帧。
+ *  - anchors: 喂 isValidLayout 的 UI 锚点块(校验是否被遮挡层挡住)。timer 区域本身
+ *    结构丰富(数字+背景),适合当锚点,这个用途保留。 */
+export interface DiffRois {
+  diff: number[][][];
+  anchors: number[][][];
+}
+
 /** 门控用的原始(不缩放)ROI 块:池左上、十行槽带、计时器。 */
-export function diffRois(frame: GrayFrame, layout: DraftLayout): number[][][] {
+export function diffRois(frame: GrayFrame, layout: DraftLayout): DiffRois {
   const pool = cropRaw(frame, layout.pool.x, layout.pool.y, 64, 64);
   // 槽带覆盖英雄槽起点到 4 个技能槽末端,纵向覆盖十行。
   const slotsW = layout.abilitySlots.x + layout.abilitySlots.cols *
     (layout.abilitySlots.cellW + layout.abilitySlots.gapX) - layout.heroSlot.x;
   const slots = cropRaw(frame, layout.heroSlot.x, layout.heroSlot.y, slotsW, 10 * layout.rowPitch);
   const timer = cropRaw(frame, layout.timer.x, layout.timer.y, layout.timer.w, layout.timer.h);
-  return [pool, slots, timer];
+  // diff:静止判据,不含 timer(timer 每秒跳动,混入会让 FrameGate 永不判定静止)。
+  // anchors:锚点校验,pool + timer(两者结构都够丰富,可用方差判断是否被遮挡)。
+  return { diff: [pool, slots], anchors: [pool, timer] };
 }

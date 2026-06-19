@@ -19,6 +19,8 @@ export interface MonitorDeps {
   pool: Candidate[];
   cfg: ScoringConfig;
   onUpdate: (state: DraftState, activeRow: number, recs: ScoredCandidate[]) => void;
+  /** 可选诊断日志(由 app 注入,落 .live.log)。节流打印每帧卡在哪道门。 */
+  log?: (msg: string) => void;
 }
 
 /** 把一帧识别成 FrameObservation。Active Picker 需 RGB 带 —— 本 MVP 先留 null
@@ -45,16 +47,24 @@ export async function runMonitorLoop(deps: MonitorDeps, intervalMs = 250): Promi
   const slotTypeOf = (v: number): SlotType | null => deps.ref.slotType(v);
   const machine = new DraftMachine(slotTypeOf, { confirmFrames: 3 });
 
+  // 诊断:节流打印每帧卡在哪道门(每 ticks 计数,约每 ~5s 打一次状态),定位真机识别链路。
+  let ticks = 0;
+  const log = deps.log ?? (() => {});
   const tick = async () => {
+    ticks++;
+    const report = ticks % 20 === 1; // 约每 20 帧(~5s)报一次
     const frame = await captureScreenGrayFrame();
+    if (report) log(`[loop] tick#${ticks} frame=${frame.width}x${frame.height}`);
     const rois = diffRois(frame, LAYOUT_1080P);
-    if (!gate.shouldProcess(rois)) return;            // 第一层:frame-diff 门控
-    if (!isValidLayout([rois[0], rois[2]])) return;   // 第二层:布局/遮挡校验
+    if (!gate.shouldProcess(rois.diff)) { if (report) log("[loop] 卡在①frame-diff门控(画面未稳定/未变化)"); return; }
+    if (!isValidLayout(rois.anchors)) { if (report) log("[loop] 卡在②布局校验(锚点区方差不足,坐标可能对不上)"); return; }
     const obs = recognizeFrame(frame, deps);
-    if (!machine.observe(obs)) return;                 // 第三/四层在 machine 内
+    const recog = obs.slots.filter((s) => s.hero !== null || s.normals.length || s.ultimates.length).length;
+    if (report) log(`[loop] 过①②,识别到 ${recog}/${obs.slots.length} 行有内容`);
+    if (!machine.observe(obs)) { if (report) log("[loop] 卡在③状态机observe(未达确认帧/无变化)"); return; }
     const state = machine.state();
     const activeRow = state.activeRow;
-    if (activeRow === null) return;                    // 无活动玩家,本帧不打分
+    if (activeRow === null) { if (report) log("[loop] 卡在④activeRow=null(无活动玩家)"); return; }
     const me = state.players[activeRow];
     const recs = recommend(deps.pool, me, activeRow, deps.ref, deps.cfg);
     deps.onUpdate(state, activeRow, recs);
