@@ -17,7 +17,6 @@ export interface MonitorDeps {
   index: IndexEntry[];
   ref: ReferenceDb;
   pool: Candidate[];
-  dbPath: string;
   cfg: ScoringConfig;
   onUpdate: (state: DraftState, activeRow: number, recs: ScoredCandidate[]) => void;
 }
@@ -57,7 +56,7 @@ export async function runMonitorLoop(deps: MonitorDeps, intervalMs = 250): Promi
     const activeRow = state.activeRow;
     if (activeRow === null) return;                    // 无活动玩家,本帧不打分
     const me = state.players[activeRow];
-    const recs = recommend(deps.pool, me, activeRow, deps.dbPath, deps.cfg);
+    const recs = recommend(deps.pool, me, activeRow, deps.ref, deps.cfg);
     deps.onUpdate(state, activeRow, recs);
   };
 

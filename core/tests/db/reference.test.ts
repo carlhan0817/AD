@@ -27,4 +27,17 @@ describe("ReferenceDb", () => {
     expect(ref.slotType(99999)).toBeNull();
     ref.close();
   });
+
+  it("all() runs a real SELECT over the held connection (Queryable)", () => {
+    const ref = new ReferenceDb(dbPath);
+    const rows = ref.all("SELECT valve_id, slot_type FROM abilities ORDER BY valve_id") as Array<{
+      valve_id: number;
+      slot_type: string;
+    }>;
+    expect(rows).toEqual([
+      { valve_id: -9, slot_type: "hero" },
+      { valve_id: 5048, slot_type: "ultimate" },
+    ]);
+    ref.close();
+  });
 });

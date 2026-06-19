@@ -7,6 +7,15 @@
 // overlay 置顶 + 穿透已接 koffi own-hwnd 控制模块(阶段 4 完成)。
 import { app, BrowserWindow, screen } from "electron";
 import { join } from "node:path";
+import { appendFileSync } from "node:fs";
+
+// 诊断日志:主进程 console 在 electron-vite dev 终端不回显,故同时落盘到 app/.live.log,
+// 便于确认 startLiveLoop / 推送链路在 Electron 内的真实运行状态(成功与失败都记)。
+function diag(msg: string): void {
+  const line = `[${new Date().toISOString()}] ${msg}\n`;
+  try { appendFileSync(join(app.getAppPath(), ".live.log"), line); } catch { /* 忽略日志写入失败 */ }
+  console.log(msg);
+}
 import { OVERLAY_CHANNEL } from "@ad/shared/types/ipc";
 import { LiveSnapshotSource, type LiveDeps } from "./live_snapshot_source";
 import { guideMessageFor } from "./display_mode_guide";
@@ -45,19 +54,25 @@ function startLiveLoop(onUpdate: (state: DraftState, activeRow: number, recs: Sc
     const { index: indexPath, db: dbPath } = resolveModelPaths();
     const index = loadIndex(indexPath);
     const ref = new ReferenceDb(dbPath);
+    diag(`[live] assets OK: index=${index.length} 条, db=${dbPath}`);
     let stopped = false;
+    let updates = 0;
     const deps: MonitorDeps = {
       index,
       ref,
       pool: [], // 已知限制:候选池来源尚未接入,留空 → recommend 在空池上恒返回 []
-      dbPath,
       cfg: defaultScoringConfig(),
-      onUpdate: (state, activeRow, recs) => { if (!stopped) onUpdate(state, activeRow, recs); },
+      onUpdate: (state, activeRow, recs) => {
+        if (stopped) return;
+        if (++updates <= 3) diag(`[live] update#${updates} activeRow=${activeRow} recs=${recs.length}`);
+        onUpdate(state, activeRow, recs);
+      },
     };
-    runMonitorLoop(deps).catch((err) => console.error("runMonitorLoop failed:", err));
+    runMonitorLoop(deps).catch((err) => diag(`[live] runMonitorLoop failed: ${err}`));
+    diag("[live] monitor loop started");
     return () => { stopped = true; };
   } catch (err) {
-    console.error("[live] failed to start monitor loop (missing/invalid model assets?):", err);
+    diag(`[live] failed to start monitor loop (missing/invalid model assets?): ${err}`);
     return () => {};
   }
 }
@@ -90,11 +105,13 @@ app.whenReady().then(() => {
   const win = createOverlayWindow();
 
   const hwnd = findGameWindow();
+  diag(`[live] findGameWindow -> ${hwnd ? "找到 Dota 2 窗口" : "未找到(游戏未运行?)"}`);
   if (hwnd) {
     const monitorSize = screen.getPrimaryDisplay().size;
     const rect = gameClientRect(hwnd);
     const isFull = !!rect && rect.width >= monitorSize.width && rect.height >= monitorSize.height;
     const mode = detectDisplayMode(hwnd, isFull);
+    diag(`[live] 游戏窗口 rect=${rect ? `${rect.width}x${rect.height}@(${rect.x},${rect.y})` : "null"} mode=${mode}`);
     const guide = guideMessageFor(mode);
     if (guide) win.webContents.send("overlay:guide", guide); // renderer 显示引导(独占全屏)
     if (rect) { const b = rectToOverlayBounds(rect); win.setBounds(b); }

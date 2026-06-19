@@ -16,7 +16,6 @@ runMonitorLoop({
   index,
   ref,
   pool: [], // 手动冒烟脚本:候选池留空,仅观察识别/状态机输出,不验证打分
-  dbPath: DB,
   cfg: defaultScoringConfig(),
   onUpdate: (state, activeRow, recs) => {
     console.log("activeRow=", activeRow);

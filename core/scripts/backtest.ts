@@ -5,8 +5,10 @@ import { readFileSync } from "node:fs";
 import { recommend } from "../src/scoring/recommend";
 import { defaultScoringConfig, loadScoringConfig } from "../src/scoring/config";
 import { hitRateAtK, type BacktestCase } from "../src/scoring/backtest";
+import { ReferenceDb } from "../src/db/reference";
 
 const [dbPath, casesPath] = process.argv.slice(2);
+const ref = new ReferenceDb(dbPath); // recommend 现在收 Queryable,单连接贯穿整个回测脚本
 const raw = JSON.parse(readFileSync(casesPath, "utf-8")) as Array<{
   pool: { valveId: number; slotType: "hero" | "normal" | "ultimate" }[];
   me: { row: number; hero: number | null; normals: number[]; ultimates: number[] };
@@ -18,7 +20,7 @@ function run(label: string, json?: string) {
   const cfg = json ? loadScoringConfig(json) : defaultScoringConfig();
   const cases: BacktestCase[] = raw.map((c) => ({
     actualPick: c.actualPick,
-    ranked: recommend(c.pool, c.me, c.pickIndex, dbPath, cfg),
+    ranked: recommend(c.pool, c.me, c.pickIndex, ref, cfg),
   }));
   console.log(`${label}: hit@3 = ${hitRateAtK(cases, 3).toFixed(3)}`);
 }
