@@ -82,3 +82,45 @@ export function diffRois(frame: GrayFrame, layout: DraftLayout): DiffRois {
   // anchors:锚点校验,pool + timer(两者结构都够丰富,可用方差判断是否被遮挡)。
   return { diff: [pool, slots], anchors: [pool, timer] };
 }
+
+// ── 中央双区技能池:比例化布局(0..1 相对游戏客户区)+ 比例→像素推导 ──
+// 真实技能池是 3D 透视梯形台,分两区,每行起点 x 与格子数可能不同,非规整矩形网格。
+// 故按"一组行"建模,坐标全用相对比例,运行时 × 客户区矩形得真实像素。
+
+/** 比例化的一行技能池格。所有字段是 0..1 的相对客户区比例。 */
+export interface PoolRowSpec {
+  startXRatio: number;             // 该行第一格左边缘 / 客户区宽
+  yRatio: number;                  // 该行上边缘 / 客户区高
+  cellRatio: number;               // 格子边长 / 客户区宽(方格,宽=高)
+  gapRatio: number;                // 相邻格间距 / 客户区宽
+  count: number;                   // 该行格子数
+  zone: "ultimate" | "standard";   // 所属区
+}
+export interface PoolLayout { rows: PoolRowSpec[]; }
+
+/** 运行时窗口客户区矩形(结构同 main 的 WindowRect;此处本地声明避免 core 依赖 main)。 */
+export interface ClientRect { x: number; y: number; width: number; height: number }
+
+/** 把比例布局按窗口客户区矩形换算成绝对像素方格,逐行逐格铺平返回。
+ *  方格边长 = round(cellRatio × width),宽=高;含窗口原点偏移 rect.x/rect.y。 */
+export function poolCellRects(layout: PoolLayout, rect: ClientRect): Rect[] {
+  const out: Rect[] = [];
+  for (const row of layout.rows) {
+    const cell = Math.round(row.cellRatio * rect.width);
+    const pitch = (row.cellRatio + row.gapRatio) * rect.width;
+    const y = rect.y + Math.round(row.yRatio * rect.height);
+    for (let c = 0; c < row.count; c++) {
+      const x = rect.x + Math.round(row.startXRatio * rect.width + c * pitch);
+      out.push({ x, y, w: cell, h: cell });
+    }
+  }
+  return out;
+}
+
+// 标定常量:逐行比例值量自 1920×1080 真机截图。真值在标定任务填入;
+// 先给一个结构合法的占位(单行),供几何纯函数测试通过,Task 2 用真值整体替换。
+export const POOL_LAYOUT_RATIO: PoolLayout = {
+  rows: [
+    { startXRatio: 0.36, yRatio: 0.15, cellRatio: 0.042, gapRatio: 0.006, count: 5, zone: "ultimate" },
+  ],
+};
