@@ -22,7 +22,7 @@ import { guideMessageFor } from "./display_mode_guide";
 import { setOverlayClickThrough, raiseOverlayZOrder } from "@ad/main/ffi/overlay_window_ctl";
 import { findGameWindow, gameClientRect } from "@ad/main/ffi/game_window";
 import { detectDisplayMode } from "@ad/main/ffi/display_mode";
-import { rectToOverlayBounds } from "@ad/main/ffi/geometry";
+import { rectToOverlayBounds, type WindowRect } from "@ad/main/ffi/geometry";
 import { runMonitorLoop, type MonitorDeps } from "@ad/main/capture/loop";
 import { loadIndex } from "@ad/core/recognition/index_store";
 import { ReferenceDb } from "@ad/core/db/reference";
@@ -49,7 +49,10 @@ function resolveModelPaths(): { index: string; db: string } {
  *  did-finish-load 之后(窗口已显示),若不捕获会在主进程内成为未捕获异常,
  *  导致 overlay 永久空白且无诊断信息。因此整体 try/catch:失败时打印明确的
  *  console.error 并返回一个 no-op 停止函数,让 overlay 优雅降级(保持显示,但不推送数据)。 */
-function startLiveLoop(onUpdate: (state: DraftState, activeRow: number, recs: ScoredCandidate[]) => void): () => void {
+function startLiveLoop(
+  onUpdate: (state: DraftState, activeRow: number, recs: ScoredCandidate[]) => void,
+  rect: WindowRect,
+): () => void {
   try {
     const { index: indexPath, db: dbPath } = resolveModelPaths();
     const index = loadIndex(indexPath);
@@ -62,6 +65,7 @@ function startLiveLoop(onUpdate: (state: DraftState, activeRow: number, recs: Sc
       ref,
       pool: [], // 已知限制:候选池来源尚未接入,留空 → recommend 在空池上恒返回 []
       cfg: defaultScoringConfig(),
+      rect, // 启动时读到的游戏客户区矩形,供比例池布局推导像素
       log: diag, // 诊断:把循环每道门的状态落 .live.log,定位真机识别卡在哪道门
       onUpdate: (state, activeRow, recs) => {
         if (stopped) return;
@@ -111,6 +115,8 @@ app.whenReady().then(() => {
 
   const hwnd = findGameWindow();
   diag(`[live] findGameWindow -> ${hwnd ? "找到 Dota 2 窗口" : "未找到(游戏未运行?)"}`);
+  // 比例池布局推导所需的客户区矩形;读不到时回退 1920×1080@(0,0)(诊断会标注)。
+  let liveRect: WindowRect = { x: 0, y: 0, width: 1920, height: 1080 };
   if (hwnd) {
     const monitorSize = screen.getPrimaryDisplay().size;
     const rect = gameClientRect(hwnd);
@@ -119,10 +125,13 @@ app.whenReady().then(() => {
     diag(`[live] 游戏窗口 rect=${rect ? `${rect.width}x${rect.height}@(${rect.x},${rect.y})` : "null"} mode=${mode}`);
     const guide = guideMessageFor(mode);
     if (guide) win.webContents.send("overlay:guide", guide); // renderer 显示引导(独占全屏)
-    if (rect) { const b = rectToOverlayBounds(rect); win.setBounds(b); }
+    if (rect) { const b = rectToOverlayBounds(rect); win.setBounds(b); liveRect = rect; }
+    else diag("[live] gameClientRect 读不到,池布局回退 1920×1080@(0,0)");
+  } else {
+    diag("[live] 无游戏窗口,池布局回退 1920×1080@(0,0)");
   }
 
-  const liveDeps: LiveDeps = { runLoop: startLiveLoop };
+  const liveDeps: LiveDeps = { runLoop: (onUpdate) => startLiveLoop(onUpdate, liveRect) };
   const source = new LiveSnapshotSource((snap) => {
     if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, snap);
   }, liveDeps);
