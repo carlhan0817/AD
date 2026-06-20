@@ -117,10 +117,24 @@ export function poolCellRects(layout: PoolLayout, rect: ClientRect): Rect[] {
   return out;
 }
 
-// 标定常量:逐行比例值量自 1920×1080 真机截图。真值在标定任务填入;
-// 先给一个结构合法的占位(单行),供几何纯函数测试通过,Task 2 用真值整体替换。
+// 标定常量:逐行比例值量自 1920×1080 真机截图(docs/screenshot/20260619152847_1.jpg、
+// 20260619153032_1.jpg)。量法:在截图上逐格读左上角像素 (px,py) 与边长 cw,
+// 比例 = 像素 / 客户区尺寸(startXRatio=px/1920, yRatio=py/1080, cellRatio=cw/1920,
+// gapRatio=(相邻格左缘差-cw)/1920)。真机验证阶段若仍有偏移,继续按此法微调。
+//
+// 实测结构与占位假设不同:终极区每行实际 6 格(非 5);标准区每行实际 8 格
+// (左 4 + 右 4,非 7——右组末格在部分帧上被"已选英雄头像"预览遮挡,但格位本身
+// 仍是网格的一部分,故几何上仍按 8 格建模)。两区均随 3D 透视:标准区行越靠下,
+// startXRatio 越小、cellRatio 略增大(梯形台往下变宽)。
 export const POOL_LAYOUT_RATIO: PoolLayout = {
   rows: [
-    { startXRatio: 0.36, yRatio: 0.15, cellRatio: 0.042, gapRatio: 0.006, count: 5, zone: "ultimate" },
+    // 终极技能区(上,偏窄,2 行各 6 格)
+    { startXRatio: 0.3557, yRatio: 0.1509, cellRatio: 0.0339, gapRatio: 0.0182, count: 6, zone: "ultimate" },
+    { startXRatio: 0.3563, yRatio: 0.2398, cellRatio: 0.0339, gapRatio: 0.0182, count: 6, zone: "ultimate" },
+    // 标准技能区(下,偏宽,4 行各 8 格;透视下越往下越宽,startX 递减、cell 略增)
+    { startXRatio: 0.3219, yRatio: 0.3176, cellRatio: 0.0323, gapRatio: 0.0172, count: 8, zone: "standard" },
+    { startXRatio: 0.3167, yRatio: 0.3759, cellRatio: 0.0323, gapRatio: 0.0156, count: 8, zone: "standard" },
+    { startXRatio: 0.2979, yRatio: 0.4370, cellRatio: 0.0328, gapRatio: 0.0141, count: 8, zone: "standard" },
+    { startXRatio: 0.2927, yRatio: 0.5444, cellRatio: 0.0339, gapRatio: 0.0172, count: 8, zone: "standard" },
   ],
 };
