@@ -2,6 +2,7 @@
 // 低 Hz 捕获循环。生命周期 = 进入选取界面 → 全部选完。所有判定委托 core 纯函数。
 import { FrameGate } from "@ad/core/recognition/frame_diff";
 import { LAYOUT_1080P, diffRois, slotRowCells } from "@ad/core/recognition/roi";
+import { recognizePool } from "@ad/core/recognition/pool_recognize";
 import { isValidLayout } from "@ad/core/recognition/layout_guard";
 import { recognizeCell } from "@ad/core/recognition/recognize";
 import { type IndexEntry } from "@ad/core/recognition/index_store";
@@ -12,12 +13,15 @@ import type { DraftState, FrameObservation, SlotType } from "@ad/shared/types/dr
 import type { Candidate, ScoredCandidate, ScoringConfig } from "@ad/shared/types/scoring";
 import { captureScreenGrayFrame } from "./screen_source";
 import type { GrayFrame } from "@ad/core/recognition/grid";
+import type { WindowRect } from "../ffi/geometry";
 
 export interface MonitorDeps {
   index: IndexEntry[];
   ref: ReferenceDb;
   pool: Candidate[];
   cfg: ScoringConfig;
+  /** 游戏客户区矩形(启动时由 app 经 gameClientRect 读入,供比例池布局推导像素)。 */
+  rect: WindowRect;
   onUpdate: (state: DraftState, activeRow: number, recs: ScoredCandidate[]) => void;
   /** 可选诊断日志(由 app 注入,落 .live.log)。节流打印每帧卡在哪道门。 */
   log?: (msg: string) => void;
@@ -42,6 +46,11 @@ function recognizeFrame(frame: GrayFrame, deps: MonitorDeps): FrameObservation {
   return { activePicker: { row: null }, slots };
 }
 
+/** 帧 → 本局候选池(用 deps.rect 把比例池布局推导成像素再识别)。抽成纯函数以便单测。 */
+export function poolFromFrame(frame: GrayFrame, deps: MonitorDeps): number[] {
+  return recognizePool(frame, deps.rect, deps.index, undefined, 12);
+}
+
 export async function runMonitorLoop(deps: MonitorDeps, intervalMs = 250): Promise<void> {
   const gate = new FrameGate(3); // 连续 3 帧静止才认定动画结束、放行最终稳定帧(防抖)
   const slotTypeOf = (v: number): SlotType | null => deps.ref.slotType(v);
@@ -55,9 +64,11 @@ export async function runMonitorLoop(deps: MonitorDeps, intervalMs = 250): Promi
     const report = ticks % 20 === 1; // 约每 20 帧(~5s)报一次
     const frame = await captureScreenGrayFrame();
     if (report) log(`[loop] tick#${ticks} frame=${frame.width}x${frame.height}`);
-    const rois = diffRois(frame, LAYOUT_1080P);
+    const rois = diffRois(frame, LAYOUT_1080P, deps.rect);
     if (!gate.shouldProcess(rois.diff)) { if (report) log("[loop] 卡在①frame-diff门控(画面未稳定/未变化)"); return; }
     if (!isValidLayout(rois.anchors)) { if (report) log("[loop] 卡在②布局校验(锚点区方差不足,坐标可能对不上)"); return; }
+    const candidatePool = poolFromFrame(frame, deps);
+    if (report) log(`[loop] 识别到 ${candidatePool.length} 个技能(候选池)`);
     const obs = recognizeFrame(frame, deps);
     const recog = obs.slots.filter((s) => s.hero !== null || s.normals.length || s.ultimates.length).length;
     if (report) log(`[loop] 过①②,识别到 ${recog}/${obs.slots.length} 行有内容`);
