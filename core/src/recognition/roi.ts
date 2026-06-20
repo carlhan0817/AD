@@ -80,6 +80,9 @@ export function diffRois(frame: GrayFrame, layout: DraftLayout, rect?: ClientRec
     (layout.abilitySlots.cellW + layout.abilitySlots.gapX) - layout.heroSlot.x;
   const slots = cropRaw(frame, layout.heroSlot.x, layout.heroSlot.y, slotsW, 10 * layout.rowPitch);
 
+  // timer 块两条分支都可能用到(rect 分支的兜底 + 无 rect 分支),提前算一次。
+  const timer = cropRaw(frame, layout.timer.x, layout.timer.y, layout.timer.w, layout.timer.h);
+
   if (rect) {
     // 新:池区代表格作锚点。取终极区首格 + 标准区首格(铺平序列里两个稳妥点)。
     const cells = poolCellRects(POOL_LAYOUT_RATIO, rect);
@@ -93,12 +96,21 @@ export function diffRois(frame: GrayFrame, layout: DraftLayout, rect?: ClientRec
     };
     const anchorCells = [cells[flatIndexOfRow(ult)], cells[flatIndexOfRow(std)]]
       .filter((c): c is Rect => !!c);
+    // 防御性护栏:anchorCells 若 < 2(例如未来误删某个 zone 导致 findIndex 返回 -1,
+    // 或退化 rect 导致取不到代表格),绝不能让 anchors 缩短到 0/1——
+    // isValidLayout 的 anchorRois.every(...) 对空数组会「真值通过」,会让②门槛在
+    // 全黑/被遮挡画面上静默放行。此时回退旧 [pool, timer],保底至少 2 个锚点。
+    // Defensive guard: if pool anchors are insufficient (<2), never let anchors
+    // shrink to 0/1 — isValidLayout's `.every()` is vacuously true on an empty
+    // array, which would silently pass the ②-gate on a blank/occluded screen.
+    if (anchorCells.length < 2) {
+      return { diff: [pool, slots], anchors: [pool, timer] };
+    }
     const anchors = anchorCells.map((c) => cropRaw(frame, c.x, c.y, c.w, c.h));
     return { diff: [pool, slots], anchors };
   }
 
   // 回退:旧 [pool, timer] 行为(向后兼容现有调用与测试)。
-  const timer = cropRaw(frame, layout.timer.x, layout.timer.y, layout.timer.w, layout.timer.h);
   return { diff: [pool, slots], anchors: [pool, timer] };
 }
 

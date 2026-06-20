@@ -18,7 +18,6 @@ runMonitorLoop({
   pool: [], // 手动冒烟脚本:候选池留空,仅观察识别/状态机输出,不验证打分
   cfg: defaultScoringConfig(),
   rect: { x: 0, y: 0, width: 1920, height: 1080 }, // 手动冒烟脚本:假定全屏 1920x1080 客户区
-
   onUpdate: (state, activeRow, recs) => {
     console.log("activeRow=", activeRow);
     state.players.forEach((p) =>
