@@ -2,6 +2,8 @@
 import { describe, it, expect } from "vitest";
 import { LAYOUT_1080P, poolCells, slotRowCells, diffRois } from "../../src/recognition/roi";
 import type { GrayFrame } from "../../src/recognition/grid";
+import { poolCellRects, POOL_LAYOUT_RATIO } from "../../src/recognition/roi";
+import { isValidLayout } from "../../src/recognition/layout_guard";
 
 function frame(w: number, h: number): GrayFrame {
   return { width: w, height: h, data: new Uint8Array(w * h) };
@@ -59,5 +61,39 @@ describe("roi layout", () => {
     expect(r1.diff).toEqual(r2.diff);
     // anchors 部分(pool+timer)应能体现出 timer 已变化(第二块不同)。
     expect(r1.anchors[1]).not.toEqual(r2.anchors[1]);
+  });
+});
+
+describe("diffRois anchors 改用池区代表格", () => {
+  // 造一帧:把每个池区格子像素位填成高方差棋盘 → 锚点应判"有内容"。
+  function poolFilledFrame(): GrayFrame {
+    const f = { width: 1920, height: 1080, data: new Uint8Array(1920 * 1080) };
+    const rect = { x: 0, y: 0, width: 1920, height: 1080 };
+    for (const c of poolCellRects(POOL_LAYOUT_RATIO, rect)) {
+      for (let y = c.y; y < c.y + c.h; y++)
+        for (let x = c.x; x < c.x + c.w; x++)
+          f.data[y * f.width + x] = ((x + y) % 2) * 255; // 棋盘 → 高方差
+    }
+    return f;
+  }
+
+  it("传 rect 时 anchors 取自池区代表格,池有内容 → isValidLayout 通过", () => {
+    const rect = { x: 0, y: 0, width: 1920, height: 1080 };
+    const rois = diffRois(poolFilledFrame(), LAYOUT_1080P, rect);
+    expect(rois.anchors.length).toBeGreaterThanOrEqual(2);
+    expect(isValidLayout(rois.anchors)).toBe(true);
+  });
+
+  it("传 rect 但池区全空(纯色)→ 锚点方差不足 → isValidLayout 不通过", () => {
+    const rect = { x: 0, y: 0, width: 1920, height: 1080 };
+    const blank = { width: 1920, height: 1080, data: new Uint8Array(1920 * 1080) }; // 全 0
+    const rois = diffRois(blank, LAYOUT_1080P, rect);
+    expect(isValidLayout(rois.anchors)).toBe(false);
+  });
+
+  it("不传 rect 时回退旧行为:anchors = [pool, timer](向后兼容)", () => {
+    const f = { width: 1920, height: 1080, data: new Uint8Array(1920 * 1080) };
+    const rois = diffRois(f, LAYOUT_1080P);
+    expect(rois.anchors.length).toBe(2);
   });
 });

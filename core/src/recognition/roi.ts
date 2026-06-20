@@ -70,16 +70,35 @@ export interface DiffRois {
   anchors: number[][][];
 }
 
-/** 门控用的原始(不缩放)ROI 块:池左上、十行槽带、计时器。 */
-export function diffRois(frame: GrayFrame, layout: DraftLayout): DiffRois {
+/** 门控用的原始(不缩放)ROI 块。
+ *  - diff:静止判据(pool 左上 + 十行槽带),不含 timer。保持原逻辑。
+ *  - anchors:锚点校验。传 rect 时取"池区代表格"(终极区首格 + 标准区代表格),
+ *    这些位置在选取界面必有技能图标(高方差);不传 rect 回退旧 [pool, timer]。 */
+export function diffRois(frame: GrayFrame, layout: DraftLayout, rect?: ClientRect): DiffRois {
   const pool = cropRaw(frame, layout.pool.x, layout.pool.y, 64, 64);
-  // 槽带覆盖英雄槽起点到 4 个技能槽末端,纵向覆盖十行。
   const slotsW = layout.abilitySlots.x + layout.abilitySlots.cols *
     (layout.abilitySlots.cellW + layout.abilitySlots.gapX) - layout.heroSlot.x;
   const slots = cropRaw(frame, layout.heroSlot.x, layout.heroSlot.y, slotsW, 10 * layout.rowPitch);
+
+  if (rect) {
+    // 新:池区代表格作锚点。取终极区首格 + 标准区首格(铺平序列里两个稳妥点)。
+    const cells = poolCellRects(POOL_LAYOUT_RATIO, rect);
+    const ult = POOL_LAYOUT_RATIO.rows.findIndex((r) => r.zone === "ultimate");
+    const std = POOL_LAYOUT_RATIO.rows.findIndex((r) => r.zone === "standard");
+    // 把"第 ult 行第 0 格"与"第 std 行第 0 格"换算成铺平索引。
+    const flatIndexOfRow = (rowIdx: number): number => {
+      let n = 0;
+      for (let i = 0; i < rowIdx; i++) n += POOL_LAYOUT_RATIO.rows[i].count;
+      return n;
+    };
+    const anchorCells = [cells[flatIndexOfRow(ult)], cells[flatIndexOfRow(std)]]
+      .filter((c): c is Rect => !!c);
+    const anchors = anchorCells.map((c) => cropRaw(frame, c.x, c.y, c.w, c.h));
+    return { diff: [pool, slots], anchors };
+  }
+
+  // 回退:旧 [pool, timer] 行为(向后兼容现有调用与测试)。
   const timer = cropRaw(frame, layout.timer.x, layout.timer.y, layout.timer.w, layout.timer.h);
-  // diff:静止判据,不含 timer(timer 每秒跳动,混入会让 FrameGate 永不判定静止)。
-  // anchors:锚点校验,pool + timer(两者结构都够丰富,可用方差判断是否被遮挡)。
   return { diff: [pool, slots], anchors: [pool, timer] };
 }
 
