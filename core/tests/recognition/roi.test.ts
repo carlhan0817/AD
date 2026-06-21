@@ -97,6 +97,40 @@ describe("diffRois anchors 改用池区代表格", () => {
     expect(rois.anchors.length).toBe(2);
   });
 
+  // 真机回归:①frame-diff 门控曾永远卡住,根因是 diff(静止判据)还压在旧占位 slots
+  // 带(x≈1300,覆盖右列玩家卡的每格倒计时徽章),那些数字每秒跳动 → diff hash 每帧变
+  // → FrameGate 永远凑不齐连续静止帧。修复:传 rect 时 diff 改读「池区代表格」(静态技能
+  // 图标,不跳动),与 anchors 同源。这两个用例钉住该行为。
+  it("传 rect 时 diff 取自池区,右列玩家卡区域(旧 slots 带)跳动不影响 diff hash", () => {
+    const rect = { x: 0, y: 0, width: 1920, height: 1080 };
+    // 两帧:池区像素完全相同;只改旧 slots 带覆盖的区域(右列玩家卡倒计时徽章模拟)。
+    const f1 = { width: 1920, height: 1080, data: new Uint8Array(1920 * 1080) };
+    const f2 = { width: 1920, height: 1080, data: new Uint8Array(1920 * 1080) };
+    // 在旧 slots 带位置(heroSlot.x=1300, y=180,宽到技能槽末端,纵向 10*rowPitch)涂动。
+    const sx = LAYOUT_1080P.heroSlot.x, sy = LAYOUT_1080P.heroSlot.y;
+    for (let y = sy; y < sy + 10 * LAYOUT_1080P.rowPitch; y++) {
+      for (let x = sx; x < sx + 200; x++) f2.data[y * f2.width + x] = 255;
+    }
+    const d1 = diffRois(f1, LAYOUT_1080P, rect).diff;
+    const d2 = diffRois(f2, LAYOUT_1080P, rect).diff;
+    // 关键:diff 不含旧 slots 带 → 右列玩家卡跳动时 diff 两帧应逐块相同。
+    expect(d1).toEqual(d2);
+  });
+
+  it("传 rect 时 diff 确实跟踪池区:池区像素变化 → diff hash 改变", () => {
+    const rect = { x: 0, y: 0, width: 1920, height: 1080 };
+    const f1 = { width: 1920, height: 1080, data: new Uint8Array(1920 * 1080) };
+    const f2 = { width: 1920, height: 1080, data: new Uint8Array(1920 * 1080) };
+    // 改池区首格像素 → diff 应能体现(证明 diff 真的看着池区,而非别处)。
+    const cell = poolCellRects(POOL_LAYOUT_RATIO, rect)[0];
+    for (let y = cell.y; y < cell.y + cell.h; y++) {
+      for (let x = cell.x; x < cell.x + cell.w; x++) f2.data[y * f2.width + x] = 200;
+    }
+    const d1 = diffRois(f1, LAYOUT_1080P, rect).diff;
+    const d2 = diffRois(f2, LAYOUT_1080P, rect).diff;
+    expect(d1).not.toEqual(d2);
+  });
+
   it("anchors.length>=2 不变量:正常 rect 与退化 rect(width:0,height:0)均成立,全黑画面绝不空数组真值通过", () => {
     // 防御性护栏:anchorCells 若 < 2(未来误删某个 zone、或 rect 退化导致取不到代表格),
     // diffRois 必须回退到旧 [pool, timer] 锚点,而不是返回 0/1 个锚点——

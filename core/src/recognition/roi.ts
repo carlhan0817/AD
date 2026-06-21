@@ -71,9 +71,10 @@ export interface DiffRois {
 }
 
 /** 门控用的原始(不缩放)ROI 块。
- *  - diff:静止判据(pool 左上 + 十行槽带),不含 timer。保持原逻辑。
- *  - anchors:锚点校验。传 rect 时取"池区代表格"(终极区首格 + 标准区代表格),
- *    这些位置在选取界面必有技能图标(高方差);不传 rect 回退旧 [pool, timer]。 */
+ *  - 传 rect 时(真机路径):diff 与 anchors 都取"池区代表格"(终极区首格 + 标准区首格)。
+ *    池区是静态技能图标:静止判据不会被右列玩家卡倒计时徽章/中央倒计时跳动打断(那是
+ *    ①永久卡住的真机根因),锚点校验也因这些格必有高方差图标而能过②。
+ *  - 不传 rect 时(旧路径/向后兼容):diff = [pool, slots](不含 timer),anchors = [pool, timer]。 */
 export function diffRois(frame: GrayFrame, layout: DraftLayout, rect?: ClientRect): DiffRois {
   const pool = cropRaw(frame, layout.pool.x, layout.pool.y, 64, 64);
   const slotsW = layout.abilitySlots.x + layout.abilitySlots.cols *
@@ -84,7 +85,8 @@ export function diffRois(frame: GrayFrame, layout: DraftLayout, rect?: ClientRec
   const timer = cropRaw(frame, layout.timer.x, layout.timer.y, layout.timer.w, layout.timer.h);
 
   if (rect) {
-    // 新:池区代表格作锚点。取终极区首格 + 标准区首格(铺平序列里两个稳妥点)。
+    // 新:池区代表格,diff(静止判据)与 anchors(锚点校验)同源。
+    // 取终极区首格 + 标准区首格(铺平序列里两个稳妥点)。
     const cells = poolCellRects(POOL_LAYOUT_RATIO, rect);
     const ult = POOL_LAYOUT_RATIO.rows.findIndex((r) => r.zone === "ultimate");
     const std = POOL_LAYOUT_RATIO.rows.findIndex((r) => r.zone === "standard");
@@ -94,20 +96,24 @@ export function diffRois(frame: GrayFrame, layout: DraftLayout, rect?: ClientRec
       for (let i = 0; i < rowIdx; i++) n += POOL_LAYOUT_RATIO.rows[i].count;
       return n;
     };
-    const anchorCells = [cells[flatIndexOfRow(ult)], cells[flatIndexOfRow(std)]]
+    const poolRepCells = [cells[flatIndexOfRow(ult)], cells[flatIndexOfRow(std)]]
       .filter((c): c is Rect => !!c);
-    // 防御性护栏:anchorCells 若 < 2(例如未来误删某个 zone 导致 findIndex 返回 -1,
+    // 防御性护栏:代表格若 < 2(例如未来误删某个 zone 导致 findIndex 返回 -1,
     // 或退化 rect 导致取不到代表格),绝不能让 anchors 缩短到 0/1——
     // isValidLayout 的 anchorRois.every(...) 对空数组会「真值通过」,会让②门槛在
-    // 全黑/被遮挡画面上静默放行。此时回退旧 [pool, timer],保底至少 2 个锚点。
-    // Defensive guard: if pool anchors are insufficient (<2), never let anchors
+    // 全黑/被遮挡画面上静默放行。此时 diff 与 anchors 都回退旧坐标,保底至少 2 块。
+    // Defensive guard: if pool reps are insufficient (<2), never let anchors
     // shrink to 0/1 — isValidLayout's `.every()` is vacuously true on an empty
     // array, which would silently pass the ②-gate on a blank/occluded screen.
-    if (anchorCells.length < 2) {
+    if (poolRepCells.length < 2) {
       return { diff: [pool, slots], anchors: [pool, timer] };
     }
-    const anchors = anchorCells.map((c) => cropRaw(frame, c.x, c.y, c.w, c.h));
-    return { diff: [pool, slots], anchors };
+    // diff 改读池区代表格(静态技能图标,不跳动)。真机回归:旧 diff 压在占位 slots 带
+    // (x≈1300,覆盖右列玩家卡每格倒计时徽章),那些数字每秒跳 → diff hash 每帧变 →
+    // FrameGate 永远凑不齐连续静止帧 → ①永久卡住。改读池区后,选取界面静止时 diff 稳定,
+    // ①能正常放行。timer/中央倒计时不在池区代表格内,天然不干扰。
+    const poolBlocks = poolRepCells.map((c) => cropRaw(frame, c.x, c.y, c.w, c.h));
+    return { diff: poolBlocks, anchors: poolBlocks };
   }
 
   // 回退:旧 [pool, timer] 行为(向后兼容现有调用与测试)。
