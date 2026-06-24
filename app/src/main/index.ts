@@ -145,6 +145,16 @@ app.whenReady().then(() => {
   }, liveDeps);
   // 等首帧加载完再开始推送,避免渲染前丢帧。
   win.webContents.once("did-finish-load", () => {
+    // 临时诊断:AD_SCAN_ONCE_DEMO=1 时只跑一次手动扫描诊断,不启动 startLiveLoop ——
+    // 两者都会各开一个 ReferenceDb 连到同一个 reference.db,长连接(startLiveLoop)+
+    // 短连接(demo)并存会被 node-sqlite3-wasm 判定为 "database is locked"
+    // (见 core/src/db/reference.ts 头部注释)。故二者互斥,demo 模式下完全不调
+    // source.start。验证完删除本 if 分支 + scan_once_demo.ts,恢复无条件 source.start(1500)。
+    if (process.env.AD_SCAN_ONCE_DEMO) {
+      const { index: idxPath, db: dbP } = resolveModelPaths();
+      void runScanOnceDemo(idxPath, dbP, liveRect, diag);
+      return;
+    }
     source.start(1500);
     // 临时诊断:把标定的池格坐标(换算到 overlay 本地坐标系 = 减去客户区原点)发给 renderer 画框。
     // overlay 窗口已 setBounds 到客户区,故 overlay 本地 (0,0) = 客户区 (liveRect.x, liveRect.y)。排查完删除。
@@ -154,9 +164,6 @@ app.whenReady().then(() => {
     }));
     diag(`[debug-cells] 发送 ${debugCells.length} 个池格坐标到 overlay 画框`);
     if (!win.isDestroyed()) win.webContents.send("overlay:debug-cells", debugCells);
-    // 临时:启动后跑一次手动扫描诊断(验证识别+打分闭环)。验证完删除本行 + scan_once_demo.ts。
-    const { index: idxPath, db: dbP } = resolveModelPaths();
-    void runScanOnceDemo(idxPath, dbP, liveRect, diag);
   });
   app.on("window-all-closed", () => { source.stop(); app.quit(); });
 });
