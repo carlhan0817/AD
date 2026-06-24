@@ -24,7 +24,10 @@ import { findGameWindow, gameClientRect } from "@ad/main/ffi/game_window";
 import { detectDisplayMode } from "@ad/main/ffi/display_mode";
 import { rectToOverlayBounds, type WindowRect } from "@ad/main/ffi/geometry";
 import { runMonitorLoop, type MonitorDeps } from "@ad/main/capture/loop";
+import { runScanOnceDemo } from "@ad/main/capture/scan_once_demo";
 import { loadIndex } from "@ad/core/recognition/index_store";
+// 临时诊断:画框用。排查完连同 debug-cells 发送/zoneOfFlatIndex 一起删除。
+import { poolCellRects, poolCellZones } from "@ad/core/recognition/roi";
 import { ReferenceDb } from "@ad/core/db/reference";
 import { defaultScoringConfig } from "@ad/core/scoring/config";
 import type { DraftState } from "@ad/shared/types/draft";
@@ -86,6 +89,11 @@ function startLiveLoop(
   }
 }
 
+// 临时诊断:把铺平的格子索引映射回其所属 zone(终极/标准),供画框分色。排查完删除。
+function zoneOfFlatIndex(flat: number): string {
+  return poolCellZones()[flat] ?? "?";
+}
+
 function createOverlayWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
@@ -136,6 +144,19 @@ app.whenReady().then(() => {
     if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, snap);
   }, liveDeps);
   // 等首帧加载完再开始推送,避免渲染前丢帧。
-  win.webContents.once("did-finish-load", () => source.start(1500));
+  win.webContents.once("did-finish-load", () => {
+    source.start(1500);
+    // 临时诊断:把标定的池格坐标(换算到 overlay 本地坐标系 = 减去客户区原点)发给 renderer 画框。
+    // overlay 窗口已 setBounds 到客户区,故 overlay 本地 (0,0) = 客户区 (liveRect.x, liveRect.y)。排查完删除。
+    const debugCells = poolCellRects({ rows: [] }, liveRect).map((c, i) => ({
+      x: c.x - liveRect.x, y: c.y - liveRect.y, w: c.w, h: c.h,
+      zone: zoneOfFlatIndex(i),
+    }));
+    diag(`[debug-cells] 发送 ${debugCells.length} 个池格坐标到 overlay 画框`);
+    if (!win.isDestroyed()) win.webContents.send("overlay:debug-cells", debugCells);
+    // 临时:启动后跑一次手动扫描诊断(验证识别+打分闭环)。验证完删除本行 + scan_once_demo.ts。
+    const { index: idxPath, db: dbP } = resolveModelPaths();
+    void runScanOnceDemo(idxPath, dbP, liveRect, diag);
+  });
   app.on("window-all-closed", () => { source.stop(); app.quit(); });
 });
