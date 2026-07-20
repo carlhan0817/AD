@@ -36,8 +36,12 @@ const MODELS_COORDS_1080P = loadModelsCoords1080p();
 /** 返回技能池两端 12 个英雄格的绝对像素 Rect,按 hero_order 0..11 升序。
  *  非 1920×1080 时按 rect 尺寸等比缩放(与 poolCellRects 同规则);1080p 下为恒等(仅叠加偏移)。 */
 export function heroCellRects(rect: ClientRect): HeroCell[] {
-  const sx = rect.width / 1920;
-  const sy = rect.height / 1080;
+  // 真机截屏常为 1918x1078 一类的近 1080p 尺寸(同一 1080p 显示器的 capture-crop/DPI 伪影,
+  // 并非真实异分辨率);逐格 pHash 识别对像素极敏感,哪怕 sx/sy≈0.998 的缩放也会让多格收敛到
+  // 错误英雄(已实测验证,非理论推测),故在容差内直接按恒等处理,不缩放。
+  const near1080p = Math.abs(rect.width - 1920) <= 10 && Math.abs(rect.height - 1080) <= 10;
+  const sx = near1080p ? 1 : rect.width / 1920;
+  const sy = near1080p ? 1 : rect.height / 1080;
   const ox = HERO_OFFSET_1080P.dx * sx;
   const oy = HERO_OFFSET_1080P.dy * sy;
   return [...MODELS_COORDS_1080P]

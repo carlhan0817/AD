@@ -44,4 +44,14 @@ describe("heroCellRects", () => {
     expect(c0.w).toBe(Math.round(49 * sx));
     expect(c0.h).toBe(Math.round(46 * sy));
   });
+
+  it("近 1080p 实拍尺寸(1918×1078,容差 ±10px 内)不应引入缩放漂移,坐标与精确 1920×1080 一致", () => {
+    // 回归测试:真机截屏因 capture-crop/DPI 伪影常为 1918x1078 而非精确 1920x1080,
+    // 曾按真实比例缩放(sx≈0.999,sy≈0.998),1-2px 漂移足以让逐格 pHash 识别收敛到错误英雄。
+    const exactRect = { x: 0, y: 0, width: 1920, height: 1080 };
+    const nearRect = { x: 0, y: 0, width: 1918, height: 1078 };
+    const exactCells = heroCellRects(exactRect);
+    const nearCells = heroCellRects(nearRect);
+    expect(nearCells).toEqual(exactCells);
+  });
 });
