@@ -3,6 +3,7 @@
 // 英雄槽(长方形)与技能槽(正方形)物理解耦,避免对长方形头像做正方形裁切→形变→雪崩。
 import { cropRaw, cropGrid, type GrayFrame, type GridSpec } from "./grid";
 import { resizeGrayTo32 } from "./resize"; // 共享双线性缩放(阶段 1),与建索引侧同核
+import { POOL_CELLS_1080P } from "./pool_layout_1080p"; // 逐格绝对坐标(取代比例模型)
 
 /** 矩形 ROI。 */
 export interface Rect { x: number; y: number; w: number; h: number; }
@@ -86,17 +87,12 @@ export function diffRois(frame: GrayFrame, layout: DraftLayout, rect?: ClientRec
 
   if (rect) {
     // 新:池区代表格,diff(静止判据)与 anchors(锚点校验)同源。
-    // 取终极区首格 + 标准区首格(铺平序列里两个稳妥点)。
+    // 取第一个终极区格 + 第一个标准区格(铺平序列里两个稳妥的「必有图标」点)。
     const cells = poolCellRects(POOL_LAYOUT_RATIO, rect);
-    const ult = POOL_LAYOUT_RATIO.rows.findIndex((r) => r.zone === "ultimate");
-    const std = POOL_LAYOUT_RATIO.rows.findIndex((r) => r.zone === "standard");
-    // 把"第 ult 行第 0 格"与"第 std 行第 0 格"换算成铺平索引。
-    const flatIndexOfRow = (rowIdx: number): number => {
-      let n = 0;
-      for (let i = 0; i < rowIdx; i++) n += POOL_LAYOUT_RATIO.rows[i].count;
-      return n;
-    };
-    const poolRepCells = [cells[flatIndexOfRow(ult)], cells[flatIndexOfRow(std)]]
+    const zones = poolCellZones(); // 与 cells 一一对应
+    const ultIdx = zones.indexOf("ultimate");
+    const stdIdx = zones.indexOf("standard");
+    const poolRepCells = [cells[ultIdx], cells[stdIdx]]
       .filter((c): c is Rect => !!c);
     // 防御性护栏:代表格若 < 2(例如未来误删某个 zone 导致 findIndex 返回 -1,
     // 或退化 rect 导致取不到代表格),绝不能让 anchors 缩短到 0/1——
@@ -138,20 +134,49 @@ export interface PoolLayout { rows: PoolRowSpec[]; }
 /** 运行时窗口客户区矩形(结构同 main 的 WindowRect;此处本地声明避免 core 依赖 main)。 */
 export interface ClientRect { x: number; y: number; width: number; height: number }
 
-/** 把比例布局按窗口客户区矩形换算成绝对像素方格,逐行逐格铺平返回。
- *  方格边长 = round(cellRatio × width),宽=高;含窗口原点偏移 rect.x/rect.y。 */
-export function poolCellRects(layout: PoolLayout, rect: ClientRect): Rect[] {
-  const out: Rect[] = [];
-  for (const row of layout.rows) {
-    const cell = Math.round(row.cellRatio * rect.width);
-    const pitch = (row.cellRatio + row.gapRatio) * rect.width;
-    const y = rect.y + Math.round(row.yRatio * rect.height);
-    for (let c = 0; c < row.count; c++) {
-      const x = rect.x + Math.round(row.startXRatio * rect.width + c * pitch);
-      out.push({ x, y, w: cell, h: cell });
-    }
-  }
-  return out;
+/** 全局平移校正(1080p 像素)。JSON 坐标系原点与 gameClientRect 客户区原点可能差一个固定偏移
+ *  (如 JSON 含标题栏/边框而客户区不含)→ 所有框整体偏移。真机量「框中心 vs 图标中心」后填此值。
+ *  框偏图标右下 → 需向左上平移 → dx/dy 取负。0 表示未校正。按 rect 等比缩放后再应用。 */
+// 真机重标(2026-06-21,基于真游戏帧 .frame_dump_0.pgm + pHash 距离实测,而非目视):
+// 关键教训——目视画框对齐 ≠ pHash 最优。在真帧上跑 48 格最近邻距离对比三种 offset:
+//   OLD(-9,-6): mean=18.5 d<=10 命中 0/48   ← 之前那帧是编辑器,量反了
+//   (+6,+6)   : mean=17.9 d<=10 命中 0/48   ← 目视"更贴",但 pHash 反而更差
+//   (0,0)     : mean=9.2  d<=10 命中 33/48  ← 原始 POOL_CELLS_1080P 坐标本就近乎精准
+// 故正确值是【不加偏移】。pHash 才是识别真正用的度量,以它为准(目视画框对齐反而会误导)。
+// 对齐后该帧 48 格在阈值 20 下全部正确识别(识别阈值见 main/src/capture/loop.ts 的
+// RECOGNIZE_MAX_DISTANCE)。
+export const POOL_OFFSET_1080P = { dx: 0, dy: 0 };
+
+/** 池布局推导:返回技能池 48 格的绝对像素 ROI(逐行逐格铺平)。
+ *  改用逐格绝对坐标(POOL_CELLS_1080P)而非「行+比例+统一步距」——池是 3D 透视梯形台,
+ *  每格 w/h/间距都不同,统一步距会累积发散(真机画框已证实)。逐格坐标无累积误差。
+ *  非 1920×1080 时按 rect 尺寸等比缩放(width/1920, height/1080);1080p 下为恒等。
+ *  再叠加 POOL_OFFSET_1080P 全局平移(校正 JSON 坐标系与客户区原点差)。
+ *  `layout` 形参保留以兼容现有调用签名,实际坐标来自 POOL_CELLS_1080P,不再依赖比例模型。
+ *
+ *  ⚠️ 已知待核实隐患(2026-07-20,hero-cell-recognition 计划期间发现,未在该计划范围内修复):
+ *  英雄格识别(hero_layout.ts 的 heroCellRects)曾因同类无条件等比缩放,在真机截屏(常见
+ *  1918×1078 一类,非真实异分辨率,是同一 1080p 显示器的 capture-crop/DPI 伪影)上产生
+ *  约 1-2px 漂移,导致约一半格识别到错误英雄——pHash 逐格识别对像素极敏感,微小缩放足以
+ *  致命。此函数的缩放逻辑与修复前的 heroCellRects 完全同构,是否有相同隐患**未经验证**
+ *  ("48/48 verified" 的判据帧尺寸未被断言,不确定是否为真实 1918×1078 截屏)。
+ *  修复前(参考 hero_layout.ts 的 near1080p 容差处理)不要假设本函数在真机截屏上无偏差。 */
+export function poolCellRects(_layout: PoolLayout, rect: ClientRect): Rect[] {
+  const sx = rect.width / 1920;
+  const sy = rect.height / 1080;
+  const ox = POOL_OFFSET_1080P.dx * sx;
+  const oy = POOL_OFFSET_1080P.dy * sy;
+  return POOL_CELLS_1080P.map((c) => ({
+    x: rect.x + Math.round(c.x * sx + ox),
+    y: rect.y + Math.round(c.y * sy + oy),
+    w: Math.round(c.w * sx),
+    h: Math.round(c.h * sy),
+  }));
+}
+
+/** 池区代表格的 zone 序列(与 poolCellRects 返回顺序一一对应),供锚点/分区判断。 */
+export function poolCellZones(): ("ultimate" | "standard")[] {
+  return POOL_CELLS_1080P.map((c) => c.zone);
 }
 
 // 标定常量:逐行比例值量自 1920×1080 真机截图(docs/screenshot/20260619152847_1.jpg、
@@ -163,15 +188,19 @@ export function poolCellRects(layout: PoolLayout, rect: ClientRect): Rect[] {
 // (左 4 + 右 4,非 7——右组末格在部分帧上被"已选英雄头像"预览遮挡,但格位本身
 // 仍是网格的一部分,故几何上仍按 8 格建模)。两区均随 3D 透视:标准区行越靠下,
 // startXRatio 越小、cellRatio 略增大(梯形台往下变宽)。
+// 重标定 v3(2026-06-21 真机画框第2轮):v2 框「偏右下 + 偏大」,即起点偏右下、cell 偏大、
+// 步距偏大 → 整体右下 + 越往右下越发散(标准区右下角飘到玩家卡)。本轮:起点左上移、cell 缩小。
+// v2 框#0 实测 (686,156,88×88) 偏右下偏大 → cell 88→78、起点 x/y 各左上移。标准区发散更重,
+// cell 收更多、步距随之变小。量自 docs/screenshot/20260619153032_1.jpg,靠 overlay 画框继续迭代收敛。
 export const POOL_LAYOUT_RATIO: PoolLayout = {
   rows: [
-    // 终极技能区(上,偏窄,2 行各 6 格)
-    { startXRatio: 0.3557, yRatio: 0.1509, cellRatio: 0.0339, gapRatio: 0.0182, count: 6, zone: "ultimate" },
-    { startXRatio: 0.3563, yRatio: 0.2398, cellRatio: 0.0339, gapRatio: 0.0182, count: 6, zone: "ultimate" },
-    // 标准技能区(下,偏宽,4 行各 8 格;透视下越往下越宽,startX 递减、cell 略增)
-    { startXRatio: 0.3219, yRatio: 0.3176, cellRatio: 0.0323, gapRatio: 0.0172, count: 8, zone: "standard" },
-    { startXRatio: 0.3167, yRatio: 0.3759, cellRatio: 0.0323, gapRatio: 0.0156, count: 8, zone: "standard" },
-    { startXRatio: 0.2979, yRatio: 0.4370, cellRatio: 0.0328, gapRatio: 0.0141, count: 8, zone: "standard" },
-    { startXRatio: 0.2927, yRatio: 0.5444, cellRatio: 0.0339, gapRatio: 0.0172, count: 8, zone: "standard" },
+    // 终极技能区(上,2 行各 6 格)。起点左上移(0.3573→0.349, y 0.1444→0.137),cell 缩(0.0458→0.0406)。
+    { startXRatio: 0.3490, yRatio: 0.1370, cellRatio: 0.0406, gapRatio: 0.0016, count: 6, zone: "ultimate" },
+    { startXRatio: 0.3490, yRatio: 0.2222, cellRatio: 0.0406, gapRatio: 0.0016, count: 6, zone: "ultimate" },
+    // 标准技能区(下,4 行各 8 格;透视下越往下越宽,startX 递减、cell 略增)。起点左上移、cell 缩。
+    { startXRatio: 0.3100, yRatio: 0.3130, cellRatio: 0.0417, gapRatio: 0.0000, count: 8, zone: "standard" },
+    { startXRatio: 0.3036, yRatio: 0.3900, cellRatio: 0.0427, gapRatio: 0.0000, count: 8, zone: "standard" },
+    { startXRatio: 0.2927, yRatio: 0.4950, cellRatio: 0.0438, gapRatio: 0.0000, count: 8, zone: "standard" },
+    { startXRatio: 0.2823, yRatio: 0.5960, cellRatio: 0.0448, gapRatio: 0.0000, count: 8, zone: "standard" },
   ],
 };

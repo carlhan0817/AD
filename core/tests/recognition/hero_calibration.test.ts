@@ -2,8 +2,11 @@
 // 标定判据:4 帧真机截图 × 12 英雄格,对比 hero_ground_truth.json。
 // 判据 = pHash 最近邻能否命中 ground truth 的 valveId(distance ≤ HERO_MAX_DISTANCE),
 // 而不是目视画框对齐(见 memory phash-distance-is-ground-truth)。
-// 依赖未入库资产(docs/screenshot PNG 已入库,但 phash_index.json 是 gitignore 的构建产物)——
-// 缺 phash_index.json 时整个 suite skip,不报错。
+// 依赖未入库资产(docs/screenshot PNG 已入库,但 phash_index.json 是 gitignore 的构建产物,
+// 由 pipeline 的 build-index 命令生成)——缺 phash_index.json 时整个 suite skip,不报错。
+// 这是一个本地标定判据,不是 CI 门禁:CI 环境目前不产出 phash_index.json,故此 suite 在 CI
+// 上恒为 skip,不参与 CI 通过/失败判定。本地有该文件时才会真正跑,此时单个用例计算量较大
+// (45 格 × 每格 147 个 refine 候选窗口 + 4 张 PNG 解码),已显式放宽超时到 120s。
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -89,7 +92,7 @@ describe.skipIf(!hasAssets)("hero calibration — 4 帧 × 12 格 vs ground trut
     // 硬不变量:45 个已知正确格(48 - 3 个标 null 的未收敛格,见 fixture note)全部命中。
     expect(checked).toBe(45);
     expect(hits).toBe(checked);
-  });
+  }, 120_000); // 45 格 × 每格 147 个 refine 候选窗口 + 4 张 PNG 解码,默认 5s 超时不够,需显式放宽。
 
   it("同一帧 12 格中已知格的 valveId 互不重复(除已标注 null 的未收敛格外)", () => {
     const gt = JSON.parse(readFileSync(GT, "utf-8")) as Record<string, GtFrame>;
