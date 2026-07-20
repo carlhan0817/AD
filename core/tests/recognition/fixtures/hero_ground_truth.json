@@ -53,7 +53,7 @@
       { "order": 8, "valveId": -36, "shortName": "necrolyte" },
       { "order": 9, "valveId": -87, "shortName": "disruptor" },
       { "order": 10, "valveId": -12, "shortName": "phantom_lancer" },
-      { "order": 11, "valveId": -123, "shortName": "hoodwink", "note": "标准±6px窗口误收ember_spirit(与order3重复,违反同帧12格互不重复);±12px+pad±6扩大搜索后收敛到hoodwink d=10,人工目视截图确认(黄色兜帽+松鼠脸特征)。" }
+      { "order": 11, "valveId": null, "shortName": null, "note": "UNRESOLVED——hero_layout.ts 修复缩放 bug(近1080p帧不再误缩放)后,搜索坐标随之改变:标准±6px/pad±3窗口现收敛到ember_spirit(d=16,与order3重复,已知误判,而非目视正确的hoodwink);±12px+pad±6扩大窗口能收敛到hoodwink(d=10),但该扩大窗口已在其他格的排查中验证会引入新的误判,不能作为通用默认值。本格排除出标定判据的强命中断言,与另外两个 null 格一并列为已知标定缺口,留待更聪明的逐格搜索策略或后续再校准收敛。" }
     ]
   },
   "153844": {

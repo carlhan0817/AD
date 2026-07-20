@@ -84,10 +84,10 @@ describe.skipIf(!hasAssets)("hero calibration — 4 帧 × 12 格 vs ground trut
     // eslint-disable-next-line no-console
     if (misses.length) console.log("未命中:\n" + misses.join("\n"));
     // eslint-disable-next-line no-console
-    console.log(`命中 ${hits}/${checked}(已知未收敛的 2 格已排除在外,见 fixture note)`);
+    console.log(`命中 ${hits}/${checked}(已知未收敛的 3 格已排除在外,见 fixture note)`);
 
-    // 硬不变量:46 个已知正确格(48 - 2 个标 null 的未收敛格,见 fixture note)全部命中。
-    expect(checked).toBe(46);
+    // 硬不变量:45 个已知正确格(48 - 3 个标 null 的未收敛格,见 fixture note)全部命中。
+    expect(checked).toBe(45);
     expect(hits).toBe(checked);
   });
 
