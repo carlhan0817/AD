@@ -1,0 +1,78 @@
+{
+  "143121": {
+    "file": "屏幕截图 2026-07-07 143121.png",
+    "width": 1918,
+    "height": 1078,
+    "cells": [
+      { "order": 0, "valveId": -20, "shortName": "vengefulspirit" },
+      { "order": 1, "valveId": -33, "shortName": "enigma" },
+      { "order": 2, "valveId": -110, "shortName": "phoenix" },
+      { "order": 3, "valveId": -137, "shortName": "primal_beast" },
+      { "order": 4, "valveId": -26, "shortName": "lion" },
+      { "order": 5, "valveId": -56, "shortName": "clinkz" },
+      { "order": 6, "valveId": -31, "shortName": "lich" },
+      { "order": 7, "valveId": -98, "shortName": "shredder" },
+      { "order": 8, "valveId": -6, "shortName": "drow_ranger" },
+      { "order": 9, "valveId": -41, "shortName": "faceless_void" },
+      { "order": 10, "valveId": -107, "shortName": "earth_spirit" },
+      { "order": 11, "valveId": -95, "shortName": "troll_warlord" }
+    ]
+  },
+  "151032": {
+    "file": "屏幕截图 2026-07-07 151032.png",
+    "width": 1918,
+    "height": 1078,
+    "cells": [
+      { "order": 0, "valveId": -59, "shortName": "huskar" },
+      { "order": 1, "valveId": -42, "shortName": "skeleton_king" },
+      { "order": 2, "valveId": -41, "shortName": "faceless_void" },
+      { "order": 3, "valveId": -105, "shortName": "techies" },
+      { "order": 4, "valveId": -75, "shortName": "silencer" },
+      { "order": 5, "valveId": -53, "shortName": "furion" },
+      { "order": 6, "valveId": -112, "shortName": "winter_wyvern" },
+      { "order": 7, "valveId": -136, "shortName": "marci" },
+      { "order": 8, "valveId": -131, "shortName": "ringmaster" },
+      { "order": 9, "valveId": -11, "shortName": "nevermore" },
+      { "order": 10, "valveId": -26, "shortName": "lion" },
+      { "order": 11, "valveId": -28, "shortName": "slardar" }
+    ]
+  },
+  "153748": {
+    "file": "屏幕截图 2026-07-07 153748.png",
+    "width": 1918,
+    "height": 1078,
+    "cells": [
+      { "order": 0, "valveId": -109, "shortName": "terrorblade" },
+      { "order": 1, "valveId": -136, "shortName": "marci" },
+      { "order": 2, "valveId": -85, "shortName": "undying" },
+      { "order": 3, "valveId": -106, "shortName": "ember_spirit" },
+      { "order": 4, "valveId": -35, "shortName": "sniper" },
+      { "order": 5, "valveId": -31, "shortName": "lich" },
+      { "order": 6, "valveId": -145, "shortName": "kez" },
+      { "order": 7, "valveId": -63, "shortName": "weaver" },
+      { "order": 8, "valveId": -36, "shortName": "necrolyte" },
+      { "order": 9, "valveId": -87, "shortName": "disruptor" },
+      { "order": 10, "valveId": -12, "shortName": "phantom_lancer" },
+      { "order": 11, "valveId": -123, "shortName": "hoodwink", "note": "标准±6px窗口误收ember_spirit(与order3重复,违反同帧12格互不重复);±12px+pad±6扩大搜索后收敛到hoodwink d=10,人工目视截图确认(黄色兜帽+松鼠脸特征)。" }
+    ]
+  },
+  "153844": {
+    "file": "屏幕截图 2026-07-07 153844.png",
+    "width": 1918,
+    "height": 1073,
+    "cells": [
+      { "order": 0, "valveId": -37, "shortName": "warlock" },
+      { "order": 1, "valveId": -111, "shortName": "oracle" },
+      { "order": 2, "valveId": -4, "shortName": "bloodseeker" },
+      { "order": 3, "valveId": -29, "shortName": "tidehunter" },
+      { "order": 4, "valveId": -93, "shortName": "slark" },
+      { "order": 5, "valveId": -145, "shortName": "kez" },
+      { "order": 6, "valveId": -97, "shortName": "magnataur" },
+      { "order": 7, "valveId": null, "shortName": null, "note": "UNRESOLVED——标准与扩大窗口均未收敛到目视正确英雄(截图显示金发精灵状英雄,疑似非base皮肤或索引缺失渲染角度);标准refine收敛到nevermore(与order9重复,已知误判),扩大窗口收敛到magnataur(目视核对同样不符)。本格排除出标定判据的强命中断言,留待后续多帧/更多搜索范围收敛。" },
+      { "order": 8, "valveId": -18, "shortName": "sven" },
+      { "order": 9, "valveId": -73, "shortName": "alchemist" },
+      { "order": 10, "valveId": -107, "shortName": "earth_spirit" },
+      { "order": 11, "valveId": null, "shortName": null, "note": "UNRESOLVED——截图显示黄褐色头巾英雄,标准refine收敛到nevermore(与order7原判重复,已知误判),扩大窗口收敛到queenofpain(目视核对不符)。本格排除出标定判据的强命中断言,留待后续收敛。" }
+    ]
+  }
+}
