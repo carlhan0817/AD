@@ -4,7 +4,7 @@ import sqlite3
 from PIL import Image
 
 from ad_pipeline.db.loader import create_db, upsert_abilities, upsert_heroes
-from ad_pipeline.cli import build_index_command
+from ad_pipeline.cli import build_index_command, _read_index_entries
 
 
 class FakeClient:
@@ -23,8 +23,34 @@ class FakeClient:
         ...
 
 
+def _seed_selection(selection_dir, picture="mirana", color=(10, 200, 30)):
+    selection_dir.mkdir(parents=True, exist_ok=True)
+    p = selection_dir / f"npc_dota_hero_{picture}_png.png"
+    Image.new("RGB", (71, 94), color).save(p)
+    return p
+
+
 def test_build_index_command_writes_index(tmp_path):
     db = tmp_path / "reference.db"
+    _seed_mirana_db(db)
+
+    sprites = tmp_path / "sprites"
+    selection = tmp_path / "selection"
+    _seed_selection(selection)
+    index_out = tmp_path / "phash_index.json"
+    build_index_command(db, sprites, index_out, FakeClient(), selection_dir=selection)
+
+    data = json.loads(index_out.read_text(encoding="utf-8"))
+    by_id = {e["valveId"]: e for e in data}
+    # 真实技能(正 valveId)+ 英雄(负 valveId)都进了索引
+    assert 5051 in by_id and -9 in by_id
+    assert all(len(e["phash"]) == 16 for e in data)
+    # 技能 sprite 下载落盘;英雄走本地 selection(不下载到 hero/)
+    assert (sprites / "ability" / "mirana_starfall.png").exists()
+    assert not (sprites / "hero" / "mirana.png").exists()
+
+
+def _seed_mirana_db(db):
     create_db(db)
     upsert_abilities(db, [{
         "valveId": 5051, "shortName": "mirana_starfall", "englishName": "Starstorm",
@@ -38,18 +64,49 @@ def test_build_index_command_writes_index(tmp_path):
     upsert_heroes(db, {9: {"id": 9, "shortName": "mirana",
                           "englishName": "Mirana", "picture": "mirana"}})
 
+
+def test_hero_entry_path_points_to_local_selection_dir(tmp_path):
+    """英雄图源改为本地 selection 立绘:entry.path 指向
+    <selection_dir>/npc_dota_hero_<picture>_png.png,而非下载的 hero sprite。"""
+    db = tmp_path / "reference.db"
+    _seed_mirana_db(db)
+
     sprites = tmp_path / "sprites"
+    selection = tmp_path / "selection"
+    selection.mkdir()
+    sel_file = selection / "npc_dota_hero_mirana_png.png"
+    Image.new("RGB", (71, 94), (10, 200, 30)).save(sel_file)
+
+    entries, manifest = _read_index_entries(db, sprites, selection_dir=selection)
+    by_id = {e["valveId"]: e for e in entries}
+
+    # 英雄(负 valveId)path 指向本地 selection 文件
+    assert by_id[-9]["path"] == str(sel_file)
+    # 英雄不再进下载 manifest(本地已有,无需下载)
+    assert all(m["kind"] != "hero" for m in manifest)
+    # 技能仍走原下载路径
+    assert by_id[5051]["path"] == str(sprites / "ability" / "mirana_starfall.png")
+
+
+def test_build_index_command_hashes_hero_from_selection_image(tmp_path):
+    """端到端:英雄 pHash 来自 selection 立绘(而非下载的 mini 头像)。"""
+    db = tmp_path / "reference.db"
+    _seed_mirana_db(db)
+
+    sprites = tmp_path / "sprites"
+    selection = tmp_path / "selection"
+    selection.mkdir()
+    Image.new("RGB", (71, 94), (10, 200, 30)).save(
+        selection / "npc_dota_hero_mirana_png.png")
+
     index_out = tmp_path / "phash_index.json"
-    build_index_command(db, sprites, index_out, FakeClient())
+    build_index_command(db, sprites, index_out, FakeClient(), selection_dir=selection)
 
     data = json.loads(index_out.read_text(encoding="utf-8"))
     by_id = {e["valveId"]: e for e in data}
-    # 真实技能(正 valveId)+ 英雄(负 valveId)都进了索引
-    assert 5051 in by_id and -9 in by_id
-    assert all(len(e["phash"]) == 16 for e in data)
-    # sprite 文件实际落盘
-    assert (sprites / "ability" / "mirana_starfall.png").exists()
-    assert (sprites / "hero" / "mirana.png").exists()
+    assert -9 in by_id and len(by_id[-9]["phash"]) == 16
+    # 英雄图源本地,不应尝试下载到 hero/ 目录
+    assert not (sprites / "hero" / "mirana.png").exists()
 
 
 def test_build_index_command_winrate_only_excludes_abilities_without_winrate(tmp_path):
@@ -79,8 +136,11 @@ def test_build_index_command_winrate_only_excludes_abilities_without_winrate(tmp
     conn.close()
 
     sprites = tmp_path / "sprites"
+    selection = tmp_path / "selection"
+    _seed_selection(selection)
     index_out = tmp_path / "phash_index.json"
-    build_index_command(db, sprites, index_out, FakeClient(), winrate_only=True)
+    build_index_command(db, sprites, index_out, FakeClient(),
+                        winrate_only=True, selection_dir=selection)
 
     data = json.loads(index_out.read_text(encoding="utf-8"))
     by_id = {e["valveId"]: e for e in data}

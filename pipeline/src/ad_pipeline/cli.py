@@ -53,17 +53,34 @@ def _set_meta(db_path: Path, key: str, value: str) -> None:
         conn.close()
 
 
+# 英雄立绘(选取界面头像)本地目录,相对 sprites_dir。这是 Valve panorama 资产
+# npc_dota_hero_<picture>_png.png,构图与 AD 选取界面玩家卡/池两端头像一致——比原来
+# 的 mini 小地图头像贴近实拍,故英雄识别基准改用它(见 build_asset_manifest 注释)。
+_SELECTION_SUBDIR = Path("panorama") / "images" / "heroes" / "selection"
+
+
+def hero_selection_filename(picture: str) -> str:
+    """DB 的 picture 值 → 本地 selection 文件名。命名转换:加 npc_dota_hero_ 前缀与
+    _png 后缀(逆运算见此,已核对 127/127 命中)。"""
+    return f"npc_dota_hero_{picture}_png.png"
+
+
 def _read_index_entries(db_path: Path, sprites_dir: Path,
+                         selection_dir: Path | None = None,
                          winrate_only: bool = False) -> tuple[list[dict], list[dict]]:
     """从 reference.db 读 abilities+heroes,拼出 build_index 用的 entries。
 
-    abilities 中真实技能 → ability sprite(正 valveId);英雄行(slot_type='hero',
-    负 valveId)→ mini 头像;valveId 与 sprite 文件名一一对应(见 assets.build_asset_manifest)。
+    abilities 中真实技能 → ability sprite(正 valveId,走 CDN 下载 manifest)。
+    英雄行(slot_type='hero',负 valveId)→ 本地 selection 立绘,路径
+    <selection_dir>/npc_dota_hero_<picture>_png.png(本地已有,**不进下载 manifest**)。
+    selection_dir 缺省为 sprites_dir/panorama/images/heroes/selection。
 
     winrate_only=True 时,abilities 只取在 ability_winrate 表里有记录的子集
     (reference.db 里大量 valve_id 是已废弃/未启用技能,AD 模式不会出现,且其 sprite
     在 CDN 上大概率 404)。英雄始终全量保留。
     """
+    if selection_dir is None:
+        selection_dir = sprites_dir / _SELECTION_SUBDIR
     import sqlite3
     conn = sqlite3.connect(db_path)
     try:
@@ -87,21 +104,26 @@ def _read_index_entries(db_path: Path, sprites_dir: Path,
     finally:
         conn.close()
 
-    manifest = assets.build_asset_manifest(abilities, heroes)
+    # 下载 manifest 只含技能(英雄走本地 selection,不下载);传空 heroes 字典。
+    manifest = assets.build_asset_manifest(abilities, {})
     entries = []
-    for m in manifest:
-        if m["kind"] == "ability":
-            valve_id = valve_by_short[m["key"]]
-        else:  # hero:key=picture,valveId = -heroId
-            valve_id = next(h["valve_id"] for h in heroes.values() if h["picture"] == m["key"])
-        entries.append({"valveId": valve_id, "shortName": m["key"],
+    for m in manifest:  # 全是 ability
+        entries.append({"valveId": valve_by_short[m["key"]], "shortName": m["key"],
                         "path": str(sprites_dir / m["filename"])})
+    # 英雄条目直接指向本地 selection 立绘。
+    for h in heroes.values():
+        entries.append({
+            "valveId": h["valve_id"], "shortName": h["picture"],
+            "path": str(selection_dir / hero_selection_filename(h["picture"])),
+        })
     return entries, manifest
 
 
 def build_index_command(db_path: Path, sprites_dir: Path, index_out: Path, client,
-                         winrate_only: bool = False) -> dict:
-    entries, manifest = _read_index_entries(db_path, sprites_dir, winrate_only=winrate_only)
+                         winrate_only: bool = False,
+                         selection_dir: Path | None = None) -> dict:
+    entries, manifest = _read_index_entries(
+        db_path, sprites_dir, selection_dir=selection_dir, winrate_only=winrate_only)
     download_result = assets.download_manifest(manifest, sprites_dir, client)
     index = build_index_from_files(entries, index_out)
     summary = {"downloaded": download_result["downloaded"],
