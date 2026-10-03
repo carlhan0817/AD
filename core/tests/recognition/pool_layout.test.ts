@@ -1,51 +1,74 @@
 // core/tests/recognition/pool_layout.test.ts
 import { describe, it, expect } from "vitest";
-import { poolCellRects, type PoolLayout } from "../../src/recognition/roi";
+import { poolCellRects, poolCellZones, POOL_OFFSET_1080P, type PoolLayout } from "../../src/recognition/roi";
 import { POOL_LAYOUT_RATIO } from "../../src/recognition/roi";
+import { POOL_CELLS_1080P } from "../../src/recognition/pool_layout_1080p";
 
-describe("poolCellRects 比例→像素推导", () => {
-  it("把单行比例按窗口矩形换算成绝对像素方格(含原点偏移)", () => {
-    const layout: PoolLayout = {
-      rows: [
-        { startXRatio: 0.1, yRatio: 0.2, cellRatio: 0.05, gapRatio: 0.01, count: 3, zone: "standard" },
-      ],
-    };
-    const rect = { x: 100, y: 50, width: 1000, height: 800 };
-    const rects = poolCellRects(layout, rect);
+// poolCellRects 已改用逐格绝对坐标(POOL_CELLS_1080P),不再用比例模型。layout 形参保留兼容签名但被忽略。
+const ignoredLayout: PoolLayout = { rows: [] };
 
-    expect(rects.length).toBe(3);
-    // 方格边长 = round(0.05 × 1000) = 50,宽=高
-    expect(rects[0].w).toBe(50);
-    expect(rects[0].h).toBe(50);
-    // 第 0 格左上 = 原点偏移 + 比例像素:x = 100 + round(0.1×1000) = 200;y = 50 + round(0.2×800) = 210
-    expect(rects[0].x).toBe(200);
-    expect(rects[0].y).toBe(210);
-    // 格间步距 = (cellRatio + gapRatio) × width = (0.05+0.01)×1000 = 60
-    expect(rects[1].x).toBe(200 + 60);
-    expect(rects[2].x).toBe(200 + 120);
-    // 同一行 y 不变
-    expect(rects[1].y).toBe(210);
+describe("poolCellRects 逐格绝对坐标", () => {
+  it("返回 48 格(终极 12 + 标准 36),与 POOL_CELLS_1080P 一致", () => {
+    const cells = poolCellRects(ignoredLayout, { x: 0, y: 0, width: 1920, height: 1080 });
+    expect(cells.length).toBe(48);
+    expect(poolCellZones().filter((z) => z === "ultimate").length).toBe(12);
+    expect(poolCellZones().filter((z) => z === "standard").length).toBe(36);
   });
 
-  it("多行铺平:先第0行所有格,再第1行所有格", () => {
-    const layout: PoolLayout = {
-      rows: [
-        { startXRatio: 0.1, yRatio: 0.2, cellRatio: 0.05, gapRatio: 0.0, count: 2, zone: "ultimate" },
-        { startXRatio: 0.1, yRatio: 0.4, cellRatio: 0.05, gapRatio: 0.0, count: 2, zone: "standard" },
-      ],
-    };
-    const rect = { x: 0, y: 0, width: 1000, height: 1000 };
-    const rects = poolCellRects(layout, rect);
-    expect(rects.length).toBe(4);
-    expect(rects[0].y).toBe(200); // 行0
-    expect(rects[1].y).toBe(200); // 行0
-    expect(rects[2].y).toBe(400); // 行1
-    expect(rects[3].y).toBe(400); // 行1
+  it("1920×1080 下:坐标 == POOL_CELLS_1080P + 全局平移 POOL_OFFSET_1080P", () => {
+    const cells = poolCellRects(ignoredLayout, { x: 0, y: 0, width: 1920, height: 1080 });
+    // 引用 POOL_CELLS_1080P 而非硬编码数值,使断言随标定更新自动跟随(验证的是平移/缩放逻辑,非具体坐标)。
+    const u0 = POOL_CELLS_1080P[0]; // 终极区首格
+    expect(cells[0]).toEqual({ x: u0.x + POOL_OFFSET_1080P.dx, y: u0.y + POOL_OFFSET_1080P.dy, w: u0.w, h: u0.h });
+    const s0 = POOL_CELLS_1080P[12]; // 标准区首格
+    expect(cells[12]).toEqual({ x: s0.x + POOL_OFFSET_1080P.dx, y: s0.y + POOL_OFFSET_1080P.dy, w: s0.w, h: s0.h });
+  });
+
+  it("含客户区原点偏移:rect.x/rect.y 加到每格(在全局平移之上)", () => {
+    const cells = poolCellRects(ignoredLayout, { x: 100, y: 50, width: 1920, height: 1080 });
+    const u0 = POOL_CELLS_1080P[0];
+    expect(cells[0]).toEqual({ x: 100 + u0.x + POOL_OFFSET_1080P.dx, y: 50 + u0.y + POOL_OFFSET_1080P.dy, w: u0.w, h: u0.h });
+  });
+
+  it("非 1080p 按 rect 等比缩放(宽高各自缩放,平移也缩放)", () => {
+    // 缩到一半:坐标、尺寸、全局平移都 ×0.5(四舍五入)。
+    const cells = poolCellRects(ignoredLayout, { x: 0, y: 0, width: 960, height: 540 });
+    const u0 = POOL_CELLS_1080P[0];
+    expect(cells[0]).toEqual({
+      x: Math.round(u0.x * 0.5 + POOL_OFFSET_1080P.dx * 0.5),
+      y: Math.round(u0.y * 0.5 + POOL_OFFSET_1080P.dy * 0.5),
+      w: Math.round(u0.w * 0.5), h: Math.round(u0.h * 0.5),
+    });
+  });
+
+  it("poolCellZones 与 poolCellRects 顺序一一对应(前 12 终极,后 36 标准)", () => {
+    const zones = poolCellZones();
+    expect(zones.length).toBe(48);
+    expect(zones.slice(0, 12).every((z) => z === "ultimate")).toBe(true);
+    expect(zones.slice(12).every((z) => z === "standard")).toBe(true);
   });
 });
 
-describe("POOL_LAYOUT_RATIO 标定常量结构", () => {
-  it("含终极与标准两区,所有比例在 0..1,count 为正", () => {
+describe("POOL_CELLS_1080P 标定常量", () => {
+  it("48 格,含两区,所有格在 1920×1080 画面内", () => {
+    expect(POOL_CELLS_1080P.length).toBe(48);
+    const zones = new Set(POOL_CELLS_1080P.map((c) => c.zone));
+    expect(zones.has("ultimate")).toBe(true);
+    expect(zones.has("standard")).toBe(true);
+    for (const c of POOL_CELLS_1080P) {
+      expect(c.x).toBeGreaterThanOrEqual(0);
+      expect(c.y).toBeGreaterThanOrEqual(0);
+      expect(c.x + c.w).toBeLessThanOrEqual(1920);
+      expect(c.y + c.h).toBeLessThanOrEqual(1080);
+      expect(c.w).toBeGreaterThan(0);
+      expect(c.h).toBeGreaterThan(0);
+    }
+  });
+});
+
+// POOL_LAYOUT_RATIO 已不再是池布局来源(保留导出仅为类型/向后兼容),但其结构仍合法。
+describe("POOL_LAYOUT_RATIO(遗留,已不驱动池布局)", () => {
+  it("结构合法:两区、比例在 0..1、count 为正", () => {
     const zones = new Set(POOL_LAYOUT_RATIO.rows.map((r) => r.zone));
     expect(zones.has("ultimate")).toBe(true);
     expect(zones.has("standard")).toBe(true);
@@ -55,16 +78,6 @@ describe("POOL_LAYOUT_RATIO 标定常量结构", () => {
         expect(v).toBeLessThanOrEqual(1);
       }
       expect(r.count).toBeGreaterThan(0);
-    }
-  });
-
-  it("在 1920×1080 下所有格子像素都落在画面内", () => {
-    const rect = { x: 0, y: 0, width: 1920, height: 1080 };
-    for (const c of poolCellRects(POOL_LAYOUT_RATIO, rect)) {
-      expect(c.x).toBeGreaterThanOrEqual(0);
-      expect(c.y).toBeGreaterThanOrEqual(0);
-      expect(c.x + c.w).toBeLessThanOrEqual(1920);
-      expect(c.y + c.h).toBeLessThanOrEqual(1080);
     }
   });
 });
