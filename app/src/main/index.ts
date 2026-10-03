@@ -152,7 +152,12 @@ app.whenReady().then(() => {
     // source.start。验证完删除本 if 分支 + scan_once_demo.ts,恢复无条件 source.start(1500)。
     if (process.env.AD_SCAN_ONCE_DEMO) {
       const { index: idxPath, db: dbP } = resolveModelPaths();
-      void runScanOnceDemo(idxPath, dbP, liveRect, diag);
+      // 临时诊断:captureScreenGrayFrame 抓的是主屏【当前前台】画面,不是 Dota 窗口本身。
+      // 启动即抓会抓到终端/VSCode(根因实锤:池区纯色块→48格全塌缩成同一英雄)。
+      // 故延迟 8 秒,给用户时间 alt-tab 切回 Dota 选取界面再抓。可用 AD_SCAN_ONCE_DELAY_MS 覆盖。
+      const delayMs = Number(process.env.AD_SCAN_ONCE_DELAY_MS ?? 8000);
+      diag(`[scan-once] ${delayMs}ms 后抓帧 —— 现在请切到 Dota 选取界面并保持前台无遮挡!`);
+      setTimeout(() => { void runScanOnceDemo(idxPath, dbP, liveRect, diag); }, delayMs);
       return;
     }
     source.start(1500);
