@@ -32,4 +32,8 @@ describe("toViewModel", () => {
     const named = toViewModel({ ...snap, labels: { 5052: "Fury Swipes" } });
     expect(named.rows.map((r) => r.label)).toEqual(["Fury Swipes", "6001"]);
   });
+  it("passes the status note through (null when absent)", () => {
+    expect(toViewModel(snap).note).toBeNull();
+    expect(toViewModel({ ...snap, note: "你:左1 · 第3手" }).note).toBe("你:左1 · 第3手");
+  });
 });

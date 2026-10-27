@@ -14,6 +14,7 @@ export interface RecRow {
 }
 export interface OverlayViewModel {
   rows: RecRow[];
+  note: string | null;
   remaining: { hero: number; normal: number; ultimate: number };
 }
 
@@ -29,6 +30,7 @@ function topSignal(breakdown: Partial<Record<SignalId, number>>): SignalId | nul
 export function toViewModel(snap: OverlaySnapshot): OverlayViewModel {
   return {
     remaining: snap.remaining,
+    note: snap.note ?? null,
     rows: snap.recommendations.map((r, i) => ({
       valveId: r.candidate.valveId,
       label: snap.labels?.[r.candidate.valveId] ?? String(r.candidate.valveId),
