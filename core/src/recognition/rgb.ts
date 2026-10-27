@@ -75,3 +75,15 @@ export const EMPTY_CELL_STD = 32;
 export function isEmptyCell(cellRgb: Uint8Array): boolean {
   return pixelStd(cellRgb) < EMPTY_CELL_STD;
 }
+
+/** 一格的平均饱和度:每个像素 max(R,G,B)−min(R,G,B) 的平均。灰色≈0,彩色高。 */
+export function meanChroma(rgb: Uint8Array): number {
+  const n = Math.floor(rgb.length / 3);
+  if (n === 0) return 0;
+  let sum = 0;
+  for (let p = 0; p < n; p++) {
+    const r = rgb[p * 3], g = rgb[p * 3 + 1], b = rgb[p * 3 + 2];
+    sum += Math.max(r, g, b) - Math.min(r, g, b);
+  }
+  return sum / n;
+}

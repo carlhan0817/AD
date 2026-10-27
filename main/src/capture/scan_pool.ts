@@ -7,6 +7,7 @@ import { readPool } from "@ad/core/recognition/pool_classify";
 import { resolvePool, type PoolReading } from "@ad/core/recognition/pool_resolve";
 import { phashSecondOpinion } from "@ad/core/recognition/pool_second_opinion";
 import { verifyHeroCandidate } from "@ad/core/recognition/hero_recognize";
+import { takenHeroPositions } from "@ad/core/recognition/hero_taken";
 import { recommend } from "@ad/core/scoring/recommend";
 import type { PoolMemory, PoolSnapshot } from "@ad/core/recognition/pool_memory";
 import type { Classifier } from "@ad/core/recognition/classifier";
@@ -44,8 +45,10 @@ export interface PoolScanResult {
   groups: PoolReading["groups"];
   /** 还在池里的技能 valveId(去重,格子顺序)。 */
   pool: number[];
-  /** 认定的 12 个英雄模型(负 valveId = -hero_id;未认定的不在内)。 */
+  /** 还能选的英雄模型(负 valveId = -hero_id;未认定的、已被选走的不在内)。 */
   heroes: number[];
+  /** 已被选走的英雄位置编号。 */
+  takenHeroes: number[];
   /** 有图标但没认出来的格数(下次扫描会再试)。 */
   unknownCells: number;
   recommendations: ScoredCandidate[];
@@ -59,9 +62,13 @@ export async function scanPool(
   const reading = resolvePool(cells, {
     ownerOf: (name) => deps.lookup.get(name)?.heroId ?? null,
     secondOpinion: index ? phashSecondOpinion(frames.gray, deps.rect, index) : undefined,
-    verifyHero: index
-      ? (heroPos, heroId) => verifyHeroCandidate(frames.gray, deps.rect, heroPos, -heroId, index)
-      : undefined,
+    // 记忆里已经认定过这个位置的英雄,就直接拿来对,不再做慢的图像核对
+    // (真机:选到一半时每次扫描会多花 ~0.9 秒在这上面)。
+    verifyHero: (heroPos, heroId) => {
+      // 只在「对得上」时走捷径:对不上可能是换了一局、记忆还是上一局的,这时照常做图像核对。
+      if (deps.memory.knownHero(heroPos) === heroId) return true;
+      return index ? verifyHeroCandidate(frames.gray, deps.rect, heroPos, -heroId, index) : false;
+    },
   });
   const snapshot = deps.memory.observe(reading);
 
@@ -76,14 +83,18 @@ export async function scanPool(
     pool.push(info.valveId);
     candidates.push({ valveId: info.valveId, slotType: info.slotType });
   });
-  // 英雄模型也是可选项(负 valveId)。模型是否已被别人选走目前看不出来,先全部当可选。
+  // 英雄模型也是可选项(负 valveId);已被选走的模型格会变灰,不再推荐。
+  const takenHeroes = takenHeroPositions(frames.rgb, deps.rect);
   const heroes: number[] = [];
-  for (const heroId of snapshot.heroes.values()) {
-    if (heroId === null || heroes.includes(-heroId)) continue;
+  for (const [heroPos, heroId] of snapshot.heroes) {
+    if (heroId === null || takenHeroes.has(heroPos) || heroes.includes(-heroId)) continue;
     heroes.push(-heroId);
     candidates.push({ valveId: -heroId, slotType: "hero" });
   }
   const unknownCells = snapshot.names.filter((n, i) => n === null && snapshot.available[i]).length;
   const recommendations = recommend(candidates, EMPTY_ME, null, deps.ref, deps.cfg);
-  return { snapshot, cells: reading.cells, groups: reading.groups, pool, heroes, unknownCells, recommendations };
+  return {
+    snapshot, cells: reading.cells, groups: reading.groups, pool, heroes,
+    takenHeroes: [...takenHeroes].sort((a, b) => a - b), unknownCells, recommendations,
+  };
 }

@@ -116,7 +116,7 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
         const deps: PoolScanDeps = { clf, lookup, ref, cfg, rect, memory, index };
         const res = await scanPool(frames, deps);
         diag(`[scan] 帧 ${frames.rgb.width}x${frames.rgb.height} 截图 ${t1 - t0}ms 识别 ${Date.now() - t1}ms | ` +
-          `池内技能 ${res.pool.length} 英雄 ${res.heroes.length}/12 没认出 ${res.unknownCells} 格` +
+          `池内技能 ${res.pool.length} 可选英雄 ${res.heroes.length}/12(已选走位置 ${res.takenHeroes.join(",") || "无"}) 没认出 ${res.unknownCells} 格` +
           `${res.snapshot.reset ? " (新的一局)" : ""} | 推荐 ${res.recommendations.map((r) => nameOf.get(r.candidate.valveId) ?? r.candidate.valveId).join(", ")}`);
         // 逐组列出认到了什么(英雄 + 3 个普通技能 + 终极),供对照游戏画面核对。
         const heroName = (id: number | null) => (id === null ? "?" : nameOf.get(-id)?.replace(/^Hero: /, "") ?? `hero${id}`);

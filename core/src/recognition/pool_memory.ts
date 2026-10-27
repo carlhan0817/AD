@@ -24,6 +24,11 @@ export class PoolMemory {
   private names: (string | null)[] = [];
   private heroes = new Map<number, number | null>();
 
+  /** 记忆里这个位置已认定的英雄(没有为 null)。 */
+  knownHero(heroPos: number): number | null {
+    return this.heroes.get(heroPos) ?? null;
+  }
+
   reset(): void {
     this.names = [];
     this.heroes = new Map();

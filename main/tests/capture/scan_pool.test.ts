@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { scanPool, type PoolScanDeps } from "../../src/capture/scan_pool";
 import { PoolMemory } from "@ad/core/recognition/pool_memory";
 import { POOL_SLOTS_1080P } from "@ad/core/recognition/pool_slots";
+import { heroCellRects } from "@ad/core/recognition/hero_layout";
 import { rgbFrameToGray, type RgbFrame } from "@ad/core/recognition/rgb";
 import type { Classifier, Prediction } from "@ad/core/recognition/classifier";
 import type { AbilityInfo } from "@ad/core/db/ability_lookup";
@@ -11,9 +12,17 @@ import type { ScoringConfig } from "@ad/shared/types/scoring";
 
 const RECT = { x: 0, y: 0, width: 1920, height: 1080 };
 
-/** 黑底帧;在指定的格子里画上高对比的棋盘格(= 有图标),其余格保持纯黑(= 空格)。 */
-function frameWithLiveCells(live: (i: number) => boolean): RgbFrame {
+/** 黑底帧;在指定的格子里画上高对比的棋盘格(= 有图标),其余格保持纯黑(= 空格)。
+ *  12 个英雄模型格画成彩色(= 还没被选走),takenHeroes 里的位置画成灰暗(= 已被选走)。 */
+function frameWithLiveCells(live: (i: number) => boolean, takenHeroes: number[] = []): RgbFrame {
   const data = new Uint8Array(1920 * 1080 * 3);
+  for (const c of heroCellRects(RECT)) {
+    const grey = takenHeroes.includes(c.order);
+    for (let y = c.y - 2; y < c.y + c.h + 2; y++) for (let x = c.x - 2; x < c.x + c.w + 2; x++) {
+      const on = (x + y) % 2 === 0;
+      data.set(grey ? (on ? [30, 30, 30] : [50, 50, 50]) : (on ? [220, 40, 40] : [30, 30, 200]), (y * 1920 + x) * 3);
+    }
+  }
   POOL_SLOTS_1080P.forEach((s, i) => {
     if (!live(i)) return;
     for (let y = s.y; y < s.y + s.h; y++) for (let x = s.x; x < s.x + s.w; x++) {
@@ -93,6 +102,15 @@ describe("scanPool", () => {
     expect(res.pool.length).toBe(47);
     expect(res.snapshot.names[20]).toBe(nameOf(20));
     expect(res.heroes.length).toBe(12);
+  });
+
+  it("已被选走(变灰)的英雄模型不再推荐,也不算可选英雄", async () => {
+    const res = await scanPool(frames(frameWithLiveCells(() => true, [3, 7])), deps(fakeClassifier(ALL)));
+    expect(res.takenHeroes).toEqual([3, 7]);
+    expect(res.heroes).not.toContain(-(100 + 3));
+    expect(res.heroes).not.toContain(-(100 + 7));
+    expect(res.heroes.length).toBe(10);
+    expect(res.recommendations.map((r) => r.candidate.valveId)).not.toContain(-(100 + 7));
   });
 
   it("所有格把握都不够:没有已采信的格可供分组,救不回,候选池为空", async () => {

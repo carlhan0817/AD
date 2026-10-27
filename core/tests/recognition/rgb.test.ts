@@ -1,7 +1,7 @@
 // core/tests/recognition/rgb.test.ts
 import { describe, it, expect } from "vitest";
 import {
-  rgbFrameToGray, cropResizeRgb, pixelStd, isEmptyCell, EMPTY_CELL_STD, type RgbFrame,
+  rgbFrameToGray, cropResizeRgb, pixelStd, isEmptyCell, EMPTY_CELL_STD, meanChroma, type RgbFrame,
 } from "../../src/recognition/rgb";
 import { rgbToGray601 } from "../../src/recognition/gray";
 
@@ -68,5 +68,12 @@ describe("pixelStd / isEmptyCell", () => {
     const mk = (d: number) => { const a = new Uint8Array(200).fill(100 - d); a.fill(100 + d, 100); return a; };
     expect(isEmptyCell(mk(EMPTY_CELL_STD - 1))).toBe(true);
     expect(isEmptyCell(mk(EMPTY_CELL_STD))).toBe(false);
+  });
+});
+
+describe("meanChroma", () => {
+  it("灰色为 0,纯红为 255", () => {
+    expect(meanChroma(new Uint8Array([90, 90, 90, 10, 10, 10]))).toBe(0);
+    expect(meanChroma(new Uint8Array([255, 0, 0]))).toBe(255);
   });
 });
