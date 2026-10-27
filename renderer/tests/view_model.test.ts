@@ -27,4 +27,9 @@ describe("toViewModel", () => {
   it("passes remaining quota through for the quota bar", () => {
     expect(toViewModel(snap).remaining).toEqual({ hero: 0, normal: 3, ultimate: 1 });
   });
+  it("uses the snapshot label when present, falls back to valveId", () => {
+    expect(toViewModel(snap).rows.map((r) => r.label)).toEqual(["5052", "6001"]);
+    const named = toViewModel({ ...snap, labels: { 5052: "Fury Swipes" } });
+    expect(named.rows.map((r) => r.label)).toEqual(["Fury Swipes", "6001"]);
+  });
 });

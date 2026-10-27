@@ -14,14 +14,17 @@ const HWND_TOPMOST = -1;
 const SWP_NOMOVE = 0x0002, SWP_NOSIZE = 0x0001, SWP_NOACTIVATE = 0x0010;
 
 // 私有铸造点:入参是 BrowserWindow,不是裸 hwnd —— 调用方无机会传错来源。
+// getNativeWindowHandle() 返回的是「装着 HWND 值的 Buffer」,不是 HWND 本身;直接当 void* 传,
+// 传进去的是这块 Buffer 的地址,SetWindowPos 拿到的是个无效句柄(之前拔 Z 序一直静默失败)。
+// 这里把 Buffer 里存的指针值解出来。
 function ownHwndOf(win: BrowserWindow): OwnOverlayHwnd {
   const buf = win.getNativeWindowHandle(); // 我们自己的窗口
-  return buf as unknown as OwnOverlayHwnd;
+  return koffi.decode(buf, "void *") as OwnOverlayHwnd;
 }
 
 /** 把 overlay 自身拔到最顶层(只动自己)。 */
-export function raiseOverlayZOrder(win: BrowserWindow): void {
-  SetWindowPos(ownHwndOf(win) as unknown as Buffer, HWND_TOPMOST as unknown as Buffer,
+export function raiseOverlayZOrder(win: BrowserWindow): boolean {
+  return SetWindowPos(ownHwndOf(win) as unknown as Buffer, HWND_TOPMOST as unknown as Buffer,
     0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
 

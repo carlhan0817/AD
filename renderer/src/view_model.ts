@@ -5,6 +5,8 @@ import type { SignalId } from "@ad/shared/types/scoring";
 
 export interface RecRow {
   valveId: number;
+  /** 显示名;快照没带名字时退回 valveId。 */
+  label: string;
   slotType: string;
   scoreText: string;
   topSignal: SignalId | null;
@@ -29,6 +31,7 @@ export function toViewModel(snap: OverlaySnapshot): OverlayViewModel {
     remaining: snap.remaining,
     rows: snap.recommendations.map((r, i) => ({
       valveId: r.candidate.valveId,
+      label: snap.labels?.[r.candidate.valveId] ?? String(r.candidate.valveId),
       slotType: r.candidate.slotType,
       scoreText: r.score.toFixed(2),
       topSignal: topSignal(r.breakdown),
