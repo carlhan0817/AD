@@ -6,7 +6,7 @@
 // 它仍有已知限制:候选池为空、玩家卡布局是占位。
 // 启动时探测游戏窗口/显示模式,定位 overlay 到客户区,独占全屏时只发引导文案(不强攻)。
 // overlay:guide 频道当前无人消费,renderer 端展示待后续任务接 preload bridge。
-import { app, BrowserWindow, globalShortcut, screen } from "electron";
+import { app, BrowserWindow, globalShortcut, ipcMain, screen } from "electron";
 import { join } from "node:path";
 import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import sharp from "sharp";
@@ -27,7 +27,8 @@ import { detectDisplayMode } from "@ad/main/ffi/display_mode";
 import { rectToOverlayBounds, type WindowRect } from "@ad/main/ffi/geometry";
 import { runMonitorLoop, type MonitorDeps } from "@ad/main/capture/loop";
 import { scanPool, type PoolScanDeps } from "@ad/main/capture/scan_pool";
-import { captureScreenFrames } from "@ad/main/capture/screen_source";
+import { captureScreenFrames, physicalScreenSize, primaryScreenSourceId } from "@ad/main/capture/screen_source";
+import { rawToFrames } from "@ad/main/decode";
 import { loadIndex, type IndexEntry } from "@ad/core/recognition/index_store";
 import { loadClassifier } from "@ad/core/recognition/classifier";
 import { PoolMemory } from "@ad/core/recognition/pool_memory";
@@ -84,6 +85,33 @@ async function saveScanFrame(rgb: { width: number; height: number; data: Uint8Ar
   }
 }
 
+// 可选的「持续屏幕画面流」截图(设 AD_STREAM_CAPTURE=1 启用,取帧在 preload 里做)。
+// 失败、超时、尺寸不对都返回 null,由调用方退回普通截图。
+const STREAM_CAPTURE = !!process.env.AD_STREAM_CAPTURE;
+const STREAM_TIMEOUT_MS = 2000;
+let streamReqSeq = 0;
+async function captureViaStream(win: BrowserWindow): Promise<ReturnType<typeof rawToFrames> | null> {
+  const sourceId = await primaryScreenSourceId();
+  if (sourceId === null || win.isDestroyed()) return null;
+  const { width, height } = physicalScreenSize();
+  const reqId = ++streamReqSeq;
+  return new Promise((resolve) => {
+    const done = (v: ReturnType<typeof rawToFrames> | null) => { clearTimeout(timer); ipcMain.removeListener("capture:frame", onFrame); resolve(v); };
+    const timer = setTimeout(() => { diag("[capture] 画面流超时,退回普通截图"); done(null); }, STREAM_TIMEOUT_MS);
+    const onFrame = (_e: unknown, msg: { reqId: number; width?: number; height?: number; data?: ArrayBuffer; error?: string }) => {
+      if (msg.reqId !== reqId) return;
+      if (msg.error || msg.data === undefined || msg.width !== width || msg.height !== height) {
+        diag(`[capture] 画面流失败(${msg.error ?? `尺寸 ${msg.width}x${msg.height}`}),退回普通截图`);
+        done(null);
+        return;
+      }
+      done(rawToFrames(new Uint8Array(msg.data), width, height, "rgba"));
+    };
+    ipcMain.on("capture:frame", onFrame);
+    win.webContents.send("capture:grab", { reqId, sourceId, width, height });
+  });
+}
+
 /** 手动扫描:注册全局热键,每按一次截一帧 → scanPool → 推一帧 snapshot 给 overlay。
  *  资产(分类器/reference.db)加载失败时记日志并降级为不可扫描,overlay 保持显示。
  *  返回停止函数(注销热键 + 关 DB 连接,释放 node-sqlite3-wasm 的锁目录)。 */
@@ -132,11 +160,12 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
         const rect = currentGameRect();
         if (!win.isDestroyed()) win.setBounds(overlayBoundsFor(rect));
         const t0 = Date.now();
-        const frames = await captureScreenFrames();
+        const streamed = STREAM_CAPTURE ? await captureViaStream(win) : null;
+        const frames = streamed ?? await captureScreenFrames();
         const t1 = Date.now();
         const deps: PoolScanDeps = { clf, lookup, ref, cfg, rect, memory, index, heroPortraits };
         const res = await scanPool(frames, deps);
-        diag(`[scan] 帧 ${frames.rgb.width}x${frames.rgb.height} 截图 ${t1 - t0}ms 识别 ${Date.now() - t1}ms | ` +
+        diag(`[scan] 帧 ${frames.rgb.width}x${frames.rgb.height} 截图(${streamed ? "画面流" : "普通"}) ${t1 - t0}ms 识别 ${Date.now() - t1}ms | ` +
           `池内技能 ${res.pool.length} 可选英雄 ${res.heroes.length}/12(已选走位置 ${res.takenHeroes.join(",") || "无"}) 没认出 ${res.unknownCells} 格` +
           `${res.snapshot.reset ? " (新的一局)" : ""} | 推荐 ${res.recommendations.map((r) => nameOf.get(r.candidate.valveId) ?? r.candidate.valveId).join(", ")}`);
         // 逐组列出认到了什么(英雄 + 3 个普通技能 + 终极),供对照游戏画面核对。
@@ -190,7 +219,10 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
       }
     };
     const ok = globalShortcut.register(SCAN_HOTKEY, () => { void scan(); });
-    diag(ok ? `[scan] 已就绪:在选取界面按 ${SCAN_HOTKEY} 扫描` : `[scan] 热键 ${SCAN_HOTKEY} 注册失败(被别的程序占用?)`);
+    // 开发用:设 AD_SCAN_ONCE_AFTER_MS 时启动后自动扫一次(不用按热键,方便冒烟测试)。
+    const autoScanMs = Number(process.env.AD_SCAN_ONCE_AFTER_MS);
+    if (Number.isFinite(autoScanMs) && autoScanMs >= 0) setTimeout(() => { void scan(); }, autoScanMs);
+    diag(ok ? `[scan] 已就绪:在选取界面按 ${SCAN_HOTKEY} 扫描(截图方式:${STREAM_CAPTURE ? "画面流,失败退回普通" : "普通"})` : `[scan] 热键 ${SCAN_HOTKEY} 注册失败(被别的程序占用?)`);
     return () => {
       globalShortcut.unregister(SCAN_HOTKEY);
       try { ref.close(); } catch { /* 忽略关闭期错误 */ }
