@@ -31,10 +31,12 @@ import { captureScreenFrames } from "@ad/main/capture/screen_source";
 import { loadIndex, type IndexEntry } from "@ad/core/recognition/index_store";
 import { loadClassifier } from "@ad/core/recognition/classifier";
 import { PoolMemory } from "@ad/core/recognition/pool_memory";
+import { portraitVariants } from "@ad/core/recognition/hero_portrait";
+import { remainingQuota } from "@ad/core/statemachine/quota";
 import { buildAbilityLookup } from "@ad/core/db/ability_lookup";
 import { ReferenceDb } from "@ad/core/db/reference";
 import { defaultScoringConfig } from "@ad/core/scoring/config";
-import { QUOTA, type DraftState } from "@ad/shared/types/draft";
+import type { DraftState, PlayerState } from "@ad/shared/types/draft";
 import type { ScoredCandidate } from "@ad/shared/types/scoring";
 
 const SCAN_HOTKEY = "CommandOrControl+Shift+S";
@@ -43,9 +45,10 @@ const FALLBACK_RECT: WindowRect = { x: 0, y: 0, width: 1920, height: 1080 };
 // 路径锚点:app.getAppPath() 在 dev(electron-vite dev,cwd=app/)和打包后均稳定指向
 // app/ 目录(含 app/package.json 的目录),与 main/src/capture/monitor_once.ts 用
 // import.meta.url 相对 main/src 解出的 repo 根 + models|pipeline 路径等价。
-function resolveModelPaths(): { index: string; db: string; model: string; classNames: string } {
+function resolveModelPaths(): { index: string; db: string; model: string; classNames: string; selection: string } {
   const appRoot = app.getAppPath(); // .../AD/app
   return {
+    selection: join(appRoot, "../models/templates/sprites/panorama/images/heroes/selection"),
     index: join(appRoot, "../models/templates/phash_index.json"),
     db: join(appRoot, "../pipeline/out/reference.db"),
     model: join(appRoot, "../models/classifier/ability_classifier_fp16.onnx"),
@@ -98,7 +101,25 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
     for (const r of ref.all("SELECT valve_id, english_name FROM abilities") as { valve_id: number; english_name: string }[]) {
       nameOf.set(r.valve_id, r.english_name);
     }
-    diag(`[scan] assets OK: 分类器 ${clf.classNames.length} 类, 技能表 ${lookup.size} 条, pHash 索引 ${index ? `${index.length} 条` : "无(不启用第二意见)"}`);
+    // 认「我」卡上的英雄要用英雄选取立绘(流水线下载到本地);缺了就不认,按没选英雄推荐。
+    const pictureOf = new Map<number, string>();
+    for (const r of ref.all("SELECT hero_id, picture FROM heroes") as { hero_id: number; picture: string }[]) {
+      pictureOf.set(r.hero_id, r.picture);
+    }
+    const portraitCache = new Map<number, Float32Array[] | null>();
+    const heroPortraits = async (heroId: number): Promise<Float32Array[] | null> => {
+      if (portraitCache.has(heroId)) return portraitCache.get(heroId)!;
+      let v: Float32Array[] | null = null;
+      const file = join(paths.selection, `npc_dota_hero_${pictureOf.get(heroId)}_png.png`);
+      if (existsSync(file)) {
+        const { data, info } = await sharp(file).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+        v = portraitVariants({ width: info.width, height: info.height, data: new Uint8Array(data) });
+      }
+      portraitCache.set(heroId, v);
+      return v;
+    };
+    diag(`[scan] assets OK: 分类器 ${clf.classNames.length} 类, 技能表 ${lookup.size} 条, pHash 索引 ${index ? `${index.length} 条` : "无(不启用第二意见)"}, ` +
+      `英雄立绘 ${existsSync(paths.selection) ? "有" : "无(不认我的英雄)"}`);
 
     const memory = new PoolMemory();
     const cfg = defaultScoringConfig();
@@ -113,7 +134,7 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
         const t0 = Date.now();
         const frames = await captureScreenFrames();
         const t1 = Date.now();
-        const deps: PoolScanDeps = { clf, lookup, ref, cfg, rect, memory, index };
+        const deps: PoolScanDeps = { clf, lookup, ref, cfg, rect, memory, index, heroPortraits };
         const res = await scanPool(frames, deps);
         diag(`[scan] 帧 ${frames.rgb.width}x${frames.rgb.height} 截图 ${t1 - t0}ms 识别 ${Date.now() - t1}ms | ` +
           `池内技能 ${res.pool.length} 可选英雄 ${res.heroes.length}/12(已选走位置 ${res.takenHeroes.join(",") || "无"}) 没认出 ${res.unknownCells} 格` +
@@ -126,18 +147,35 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
           diag(`[scan]   位置${String(g.hero).padStart(2)} ${heroName(g.heroId)} [${g.rule}] | ` +
             g.cells.map((c) => (c.slot.zone === "ultimate" ? `大招 ${cellName(c)}` : cellName(c))).join(" / "));
         }
+        const rowText = (row: number | null) => (row === null ? "?" : row < 5 ? `左${row + 1}` : `右${row - 4}`);
+        const myAbilities = res.myPicks ? [...res.myPicks.normals, ...(res.myPicks.ultimate ? [`大招 ${res.myPicks.ultimate}`] : [])] : [];
+        diag(`[scan]   我=${rowText(res.myRow)} 轮到=${rowText(res.activeRow)} 第${res.pickIndex}手 | ` +
+          `我的英雄 ${res.me.hero === null ? "未选/没认出" : heroName(-res.me.hero)} | 我已选 ${myAbilities.join(", ") || "无"}` +
+          `${res.myPicks && res.myPicks.unknown > 0 ? `(另有 ${res.myPicks.unknown} 格没认出)` : ""}`);
         void saveScanFrame(frames.rgb, version + 1);
         const labels: Record<number, string> = {};
         for (const r of res.recommendations) {
           const n = nameOf.get(r.candidate.valveId);
           if (n !== undefined) labels[r.candidate.valveId] = n;
         }
-        // 还不知道「我是谁、选到第几手」:按一个什么都没选的玩家显示配额。
+        // 只知道「我」的情况(别人的卡目前不读),其余行留空。认不出我时按没选过东西的玩家显示配额。
+        const players: PlayerState[] = Array.from({ length: 10 }, (_v, row) => ({ row, hero: null, normals: [], ultimates: [] }));
+        if (res.myRow !== null) players[res.myRow] = res.me;
+        if (res.me.hero !== null) labels[res.me.hero] = nameOf.get(res.me.hero) ?? String(res.me.hero);
+        const left = remainingQuota(res.me);
+        const full = res.myRow !== null && left.hero === 0 && left.normal === 0 && left.ultimate === 0;
+        const note = res.myRow === null
+          ? "没认出你坐哪(按没选过东西推荐)"
+          : full
+            ? `你:${rowText(res.myRow)} · 已选满`
+            : `你:${rowText(res.myRow)} · 第${res.pickIndex}手${res.activeRow === res.myRow ? " · 轮到你" : ""}` +
+              `${res.me.hero !== null ? ` · ${heroName(-res.me.hero)}` : ""}`;
         const snap: OverlaySnapshot = {
-          state: { activeRow: 0, players: [{ row: 0, hero: null, normals: [], ultimates: [] }] },
+          state: { activeRow: res.myRow ?? 0, players },
           recommendations: res.recommendations,
-          remaining: { hero: QUOTA.hero, normal: QUOTA.normal, ultimate: QUOTA.ultimate },
+          remaining: remainingQuota(res.myRow === null ? players[0] : res.me),
           labels,
+          note,
           version: ++version,
         };
         if (!win.isDestroyed()) {

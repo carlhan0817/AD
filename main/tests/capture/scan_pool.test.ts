@@ -80,7 +80,8 @@ describe("scanPool", () => {
     expect([...res.heroes].sort((a, b) => b - a)).toEqual(
       Array.from({ length: 12 }, (_v, k) => -(100 + k)));
     expect(res.recommendations.length).toBe(cfg.topK);
-    const scores = res.recommendations.map((r) => r.score);
+    // 技能部分按分数从高到低(英雄单独排在最后,不参与比较)。
+    const scores = res.recommendations.filter((r) => r.candidate.slotType !== "hero").map((r) => r.score);
     for (let i = 1; i < scores.length; i++) expect(scores[i]).toBeLessThanOrEqual(scores[i - 1]);
   });
 
@@ -102,6 +103,14 @@ describe("scanPool", () => {
     expect(res.pool.length).toBe(47);
     expect(res.snapshot.names[20]).toBe(nameOf(20));
     expect(res.heroes.length).toBe(12);
+  });
+
+  it("技能与英雄分开排:技能取前 topK−1 个,英雄单独 1 个排最后", async () => {
+    const res = await scanPool(frames(frameWithLiveCells(() => true)), deps(fakeClassifier(ALL)));
+    const types = res.recommendations.map((r) => r.candidate.slotType);
+    expect(types.length).toBe(cfg.topK);
+    expect(types.slice(0, -1).every((t) => t !== "hero")).toBe(true);
+    expect(types[types.length - 1]).toBe("hero");
   });
 
   it("已被选走(变灰)的英雄模型不再推荐,也不算可选英雄", async () => {

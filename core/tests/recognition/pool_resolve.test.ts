@@ -139,4 +139,43 @@ describe("PoolMemory — 满池认一次并记住", () => {
     expect(s.names).toEqual(["8_u", "8_a", "8_b", "8_c"]);
     expect(s.heroes.get(0)).toBe(8);
   });
+
+  it("变空是单向的:后来被说明框盖住、看起来不空了,仍算已选走", () => {
+    const m = new PoolMemory();
+    m.observe(full());
+    m.observe(resolvePool([cell(0, 0, "7_u"), EMPTY(0, 1), cell(0, 2, "7_b"), cell(0, 3, null, "99_x")], { ownerOf }));
+    const s = m.observe(resolvePool(
+      [cell(0, 0, "7_u"), cell(0, 1, null, "tooltip"), cell(0, 2, "7_b"), cell(0, 3, null, "99_x")], { ownerOf }));
+    expect(s.available[1]).toBe(false);
+  });
+
+  it("英雄被选走也是单向的", () => {
+    const m = new PoolMemory();
+    m.observe(full(), [3]);
+    expect([...m.observe(full(), []).takenHeroes]).toEqual([3]);
+  });
+
+  it("少数格读数和记忆不同(比如被说明框盖住)不算换局", () => {
+    const m = new PoolMemory();
+    const names = Array.from({ length: 12 }, (_v, k) => `7_n${k}`);
+    const mk = (f: (k: number) => string) => resolvePool(
+      Array.from({ length: 12 }, (_v, k) => cell(Math.floor(k / 4), k % 4, f(k))), { ownerOf });
+    m.observe(mk((k) => names[k]));
+    // 12 格里有 4 格读成别的:达到 4 格但不到 6 成 → 不清空
+    const s = m.observe(mk((k) => (k < 4 ? `55_x${k}` : names[k])));
+    expect(s.reset).toBe(false);
+    expect(s.names[0]).toBe("7_n0");
+  });
+
+  it("我坐的行、我的英雄:认出过一次就记住,换局才清空", () => {
+    const m = new PoolMemory();
+    m.rememberMyRow(null);
+    expect(m.myRow).toBeNull();
+    m.rememberMyRow(3); m.rememberMyRow(null); m.rememberMyRow(5);
+    expect(m.myRow).toBe(3);
+    m.rememberMyHero(89); m.rememberMyHero(null);
+    expect(m.myHeroId).toBe(89);
+    m.reset();
+    expect([m.myRow, m.myHeroId]).toEqual([null, null]);
+  });
 });
