@@ -13,6 +13,7 @@
   "dependencies": {
     "koffi": "^3.0.2",
     "node-sqlite3-wasm": "^0.8.58",
+    "onnxruntime-node": "^1.30.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "sharp": "^0.33.0",

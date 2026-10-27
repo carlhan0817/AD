@@ -57,3 +57,22 @@ export function recognizeHeroes(
   }
   return out;
 }
+
+/** 「核对一个候选」用的阈值,比 HERO_MAX_DISTANCE 严得多。
+ *  14 帧 150 个英雄格实测(答案取自技能分组,refine 后取最小距离):
+ *    ≤16:真英雄通过 85%(127/150),随便拿一个错的英雄来核对通过 3.4%;
+ *    ≤18:真 95% / 错 13%;≤26:错的几乎全过——所以 26 不能用来核对。
+ *  这是个偏弱的核对:只用在「一组里只有 2 格同英雄」这种少见情况,
+ *  通不过就标不确定,不会因此认错。要更强得换成彩色模板比对(后续)。 */
+export const HERO_VERIFY_MAX_DISTANCE = 16;
+
+/** 核对:位置 heroPos(0..11)上的英雄模型是不是 heroValveId(负值)这个英雄。
+ *  只和这一个候选的模板比,不在全部英雄里找最像的。 */
+export function verifyHeroCandidate(
+  frame: GrayFrame, rect: ClientRect, heroPos: number, heroValveId: number, index: IndexEntry[],
+): boolean {
+  const cell = heroCellRects(rect).find((c) => c.order === heroPos);
+  const only = index.filter((e) => e.valveId === heroValveId);
+  if (cell === undefined || only.length === 0) return false;
+  return refineHeroCell(frame, cell, only, HERO_VERIFY_MAX_DISTANCE) !== null;
+}

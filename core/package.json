@@ -15,6 +15,7 @@
     "./recognition/roi": "./src/recognition/roi.ts",
     "./recognition/layout_guard": "./src/recognition/layout_guard.ts",
     "./recognition/active_picker": "./src/recognition/active_picker.ts",
+    "./recognition/classifier": "./src/recognition/classifier.ts",
     "./statemachine/quota": "./src/statemachine/quota.ts",
     "./statemachine/reconcile": "./src/statemachine/reconcile.ts",
     "./statemachine/draft": "./src/statemachine/draft.ts",
@@ -22,11 +23,18 @@
     "./scoring/config": "./src/scoring/config.ts",
     "./db/reference": "./src/db/reference.ts"
   },
-  "scripts": { "test": "vitest run", "typecheck": "tsc --noEmit" },
-  "dependencies": { "node-sqlite3-wasm": "^0.8.58", "sharp": "^0.33.0" },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "node-sqlite3-wasm": "^0.8.58",
+    "onnxruntime-node": "^1.30.0",
+    "sharp": "^0.33.0"
+  },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "typescript": "^5.5.0",
-    "vitest": "^2.0.0",
-    "@types/node": "^20.0.0"
+    "vitest": "^2.0.0"
   }
 }

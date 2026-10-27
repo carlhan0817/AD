@@ -1,4 +1,9 @@
 // core/tests/recognition/hero_calibration.test.ts
+// ⚠️ 2026-10-03:本测试的判据(fixtures/hero_ground_truth.json)已知不可靠——它是用英雄格 pHash
+// 自举出来的答案,与「技能分组定英雄」的结果有 20/45 格不同,抽 8 格目视核对全是分组结果对。
+// 所以这里的「45/45」并不代表英雄格 pHash 识别准确(按分组答案重测,14 帧 150 格里真英雄
+// 排第一的只有 68 格)。英雄现由 pool_heroes.ts 按技能分组认定,见 pool_truth.test.ts。
+// 本测试与该 fixture 保留待定(删除或按分组答案重写),不要再拿它当验收依据。
 // 标定判据:4 帧真机截图 × 12 英雄格,对比 hero_ground_truth.json。
 // 判据 = pHash 最近邻能否命中 ground truth 的 valveId(distance ≤ HERO_MAX_DISTANCE),
 // 而不是目视画框对齐(见 memory phash-distance-is-ground-truth)。
@@ -22,7 +27,9 @@ const INDEX = join(__dirname, "..", "..", "..", "models", "templates", "phash_in
 const GT = join(__dirname, "fixtures", "hero_ground_truth.json");
 const HERO_MAX_DISTANCE = 26;
 
-const hasAssets = existsSync(SHOTS) && existsSync(INDEX) && existsSync(GT);
+// 截图未入库:目录在但 PNG 不在时也要 skip(否则读图直接报错)。
+const hasAssets = existsSync(INDEX) && existsSync(GT) &&
+  existsSync(join(SHOTS, "屏幕截图 2026-07-07 143121.png"));
 
 interface GtCell { order: number; valveId: number | null; shortName: string | null; note?: string; }
 interface GtFrame { file: string; width: number; height: number; cells: GtCell[]; }

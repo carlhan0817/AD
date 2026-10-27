@@ -1,0 +1,4135 @@
+{
+ "note": "14 张真选取截图 x 48 格的标准答案。ability=null 表示该格已被选走/变暗(空格)。来源:2026-10-03 验证——上游分类器 argmax,经「同组同英雄」一致性与 pHash 交叉核对;chen 两格按官方图标目视改正(模型标签与图标名相反)。hero=英雄位置编号(0-4,10 左;5-9,11 右),slot=该英雄的第几个普通技能(终极为 0)。截图本身未入库,缺则相关测试 skip。",
+ "frames": [
+  {
+   "file": "20260608235138_1.jpg",
+   "width": 1920,
+   "height": 1080,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "dawnbreaker_solar_guardian"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "hoodwink_sharpshooter"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "viper_viper_strike"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": "abaddon_borrowed_time"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "sven_gods_strength"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "obsidian_destroyer_sanity_eclipse"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "bristleback_warpath"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "terrorblade_sunder"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": "ancient_apparition_ice_blast"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "pudge_dismember"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "disruptor_static_storm"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "chen_hand_of_god"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "dawnbreaker_fire_wreath"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "dawnbreaker_celestial_hammer"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "dawnbreaker_luminosity"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "obsidian_destroyer_arcane_orb"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "obsidian_destroyer_astral_imprisonment"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "medusa_gorgon_grasp"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "hoodwink_acorn_shot"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "hoodwink_bushwhack"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "hoodwink_scurry"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "sven_storm_bolt"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "sven_great_cleave"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "sven_warcry"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "viper_poison_attack"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "viper_nethertoxin"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "viper_corrosive_skin"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "abaddon_death_coil"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "abaddon_aphotic_shield"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "abaddon_frostmourne"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "rubick_telekinesis"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "rubick_fade_bolt"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "rubick_arcane_supremacy"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "chen_penitence"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "chen_divine_favor"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "chen_holy_persuasion"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "terrorblade_reflection"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "terrorblade_conjure_image"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "terrorblade_metamorphosis"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "invoker_forge_spirit_ad"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "invoker_ice_wall_ad"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "invoker_ghost_walk_ad"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "ancient_apparition_cold_feet"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "ancient_apparition_ice_vortex"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "ancient_apparition_chilling_touch"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "pudge_meat_hook"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "pudge_rot"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "pudge_flesh_heap"
+    }
+   ]
+  },
+  {
+   "file": "20260619151316_1.jpg",
+   "width": 1920,
+   "height": 1080,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "razor_eye_of_the_storm"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "juggernaut_omni_slash"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "viper_viper_strike"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "sniper_assassinate"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "bristleback_warpath"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "witch_doctor_death_ward"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "lich_chain_frost"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "obsidian_destroyer_sanity_eclipse"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "templar_assassin_psionic_trap"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "razor_plasma_field"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "razor_static_link"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "razor_storm_surge"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "sniper_shrapnel"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "sniper_headshot"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "sniper_take_aim"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "juggernaut_blade_fury"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "juggernaut_healing_ward"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "juggernaut_blade_dance"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "viper_poison_attack"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "viper_nethertoxin"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "viper_corrosive_skin"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "largo_catchy_lick"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "largo_frogstomp"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "largo_croak_of_genius"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "arc_warden_flux"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "arc_warden_spark_wraith"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "bristleback_viscous_nasal_goo"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "bristleback_quill_spray"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "bristleback_bristleback"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "templar_assassin_refraction"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "templar_assassin_meld"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "templar_assassin_psi_blades"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "witch_doctor_paralyzing_cask"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "witch_doctor_voodoo_restoration"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "witch_doctor_maledict"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "obsidian_destroyer_arcane_orb"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "snapfire_firesnap_cookie"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "centaur_hoof_stomp"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "centaur_double_edge"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "centaur_return"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "lich_frost_shield"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "lich_sinister_gaze"
+    }
+   ]
+  },
+  {
+   "file": "20260619152847_1.jpg",
+   "width": 1920,
+   "height": 1080,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "axe_culling_blade"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "primal_beast_pulverize"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "spectre_haunt"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": "marci_unleash"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "ancient_apparition_ice_blast"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "visage_summon_familiars"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "shadow_shaman_mass_serpent_ward"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "earthshaker_echo_slam"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": "techies_land_mines"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "legion_commander_duel"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "phantom_lancer_juxtapose"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "undying_flesh_golem"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "axe_berserkers_call"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "axe_battle_hunger"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "axe_counter_helix"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "visage_grave_chill"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "visage_soul_assumption"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "visage_gravekeepers_cloak"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "primal_beast_onslaught"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "primal_beast_trample"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "primal_beast_uproar"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "ancient_apparition_cold_feet"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "ancient_apparition_ice_vortex"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "ancient_apparition_chilling_touch"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "spectre_spectral_dagger"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "spectre_shadow_step"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "spectre_dispersion"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "marci_grapple"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "marci_companion_run"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "marci_bodyguard"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "shadow_shaman_ether_shock"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "shadow_shaman_voodoo"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "shadow_shaman_shackles"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "undying_decay"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "undying_soul_rip"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "undying_tombstone"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "earthshaker_fissure"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "earthshaker_enchant_totem"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "earthshaker_aftershock"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "phantom_lancer_spirit_lance"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "phantom_lancer_doppelwalk"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "phantom_lancer_phantom_edge"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "techies_sticky_bomb"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "techies_reactive_tazer"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "techies_suicide"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "legion_commander_overwhelming_odds"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "legion_commander_press_the_attack"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "legion_commander_moment_of_courage"
+    }
+   ]
+  },
+  {
+   "file": "20260619152925_1.jpg",
+   "width": 1920,
+   "height": 1080,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "axe_culling_blade"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "primal_beast_pulverize"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "spectre_haunt"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": "marci_unleash"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "ancient_apparition_ice_blast"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "visage_summon_familiars"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "shadow_shaman_mass_serpent_ward"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "earthshaker_echo_slam"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": "techies_land_mines"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "legion_commander_duel"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "phantom_lancer_juxtapose"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "undying_flesh_golem"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "axe_berserkers_call"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "axe_battle_hunger"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "axe_counter_helix"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "visage_grave_chill"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "visage_soul_assumption"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "visage_gravekeepers_cloak"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "primal_beast_onslaught"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "primal_beast_trample"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "primal_beast_uproar"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "ancient_apparition_cold_feet"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "ancient_apparition_ice_vortex"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "ancient_apparition_chilling_touch"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "spectre_spectral_dagger"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "spectre_shadow_step"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "spectre_dispersion"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "marci_grapple"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "marci_companion_run"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "marci_bodyguard"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "shadow_shaman_ether_shock"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "shadow_shaman_voodoo"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "shadow_shaman_shackles"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "undying_decay"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "undying_soul_rip"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "undying_tombstone"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "earthshaker_fissure"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "earthshaker_enchant_totem"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "earthshaker_aftershock"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "phantom_lancer_spirit_lance"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "phantom_lancer_doppelwalk"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "phantom_lancer_phantom_edge"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "techies_sticky_bomb"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "techies_reactive_tazer"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "techies_suicide"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "legion_commander_overwhelming_odds"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "legion_commander_press_the_attack"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "legion_commander_moment_of_courage"
+    }
+   ]
+  },
+  {
+   "file": "20260619152936_1.jpg",
+   "width": 1920,
+   "height": 1080,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "axe_culling_blade"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "primal_beast_pulverize"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "spectre_haunt"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": "marci_unleash"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "ancient_apparition_ice_blast"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "visage_summon_familiars"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "shadow_shaman_mass_serpent_ward"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "earthshaker_echo_slam"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": "techies_land_mines"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "legion_commander_duel"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "phantom_lancer_juxtapose"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "undying_flesh_golem"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "axe_berserkers_call"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "axe_battle_hunger"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "axe_counter_helix"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "visage_grave_chill"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "visage_soul_assumption"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "visage_gravekeepers_cloak"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "primal_beast_onslaught"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "primal_beast_trample"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "primal_beast_uproar"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "ancient_apparition_cold_feet"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "ancient_apparition_ice_vortex"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "ancient_apparition_chilling_touch"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "spectre_spectral_dagger"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "spectre_shadow_step"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "spectre_dispersion"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "marci_grapple"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "marci_companion_run"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "marci_bodyguard"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "shadow_shaman_ether_shock"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "shadow_shaman_voodoo"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "shadow_shaman_shackles"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "undying_decay"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "undying_soul_rip"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "undying_tombstone"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "earthshaker_fissure"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "earthshaker_enchant_totem"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "earthshaker_aftershock"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "phantom_lancer_spirit_lance"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "phantom_lancer_doppelwalk"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "phantom_lancer_phantom_edge"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "techies_sticky_bomb"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "techies_reactive_tazer"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "techies_suicide"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "legion_commander_overwhelming_odds"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "legion_commander_press_the_attack"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "legion_commander_moment_of_courage"
+    }
+   ]
+  },
+  {
+   "file": "20260619152940_1.jpg",
+   "width": 1920,
+   "height": 1080,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "axe_culling_blade"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "primal_beast_pulverize"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "spectre_haunt"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": "marci_unleash"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "ancient_apparition_ice_blast"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "visage_summon_familiars"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "shadow_shaman_mass_serpent_ward"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "earthshaker_echo_slam"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": "techies_land_mines"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "legion_commander_duel"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "phantom_lancer_juxtapose"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "undying_flesh_golem"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "axe_berserkers_call"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "axe_battle_hunger"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "axe_counter_helix"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "visage_grave_chill"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "visage_soul_assumption"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "visage_gravekeepers_cloak"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "primal_beast_onslaught"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "primal_beast_trample"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "primal_beast_uproar"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "ancient_apparition_cold_feet"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "ancient_apparition_ice_vortex"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "ancient_apparition_chilling_touch"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "spectre_spectral_dagger"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "spectre_shadow_step"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "spectre_dispersion"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "marci_grapple"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "marci_companion_run"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "marci_bodyguard"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "shadow_shaman_ether_shock"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "shadow_shaman_voodoo"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "shadow_shaman_shackles"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "undying_decay"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "undying_soul_rip"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "undying_tombstone"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "earthshaker_fissure"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "earthshaker_enchant_totem"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "earthshaker_aftershock"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "phantom_lancer_spirit_lance"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "phantom_lancer_doppelwalk"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "phantom_lancer_phantom_edge"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "techies_sticky_bomb"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "techies_reactive_tazer"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "techies_suicide"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "legion_commander_overwhelming_odds"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "legion_commander_press_the_attack"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "legion_commander_moment_of_courage"
+    }
+   ]
+  },
+  {
+   "file": "20260619153032_1.jpg",
+   "width": 1920,
+   "height": 1080,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "axe_culling_blade"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "primal_beast_pulverize"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "spectre_haunt"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "ancient_apparition_ice_blast"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "visage_summon_familiars"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "shadow_shaman_mass_serpent_ward"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "earthshaker_echo_slam"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "legion_commander_duel"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "phantom_lancer_juxtapose"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "undying_flesh_golem"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "axe_berserkers_call"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "axe_battle_hunger"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "axe_counter_helix"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "visage_grave_chill"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "visage_soul_assumption"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "primal_beast_onslaught"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "primal_beast_trample"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "primal_beast_uproar"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "ancient_apparition_cold_feet"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "ancient_apparition_ice_vortex"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "ancient_apparition_chilling_touch"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "spectre_spectral_dagger"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "spectre_dispersion"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "marci_grapple"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "marci_companion_run"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "shadow_shaman_ether_shock"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "shadow_shaman_voodoo"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "shadow_shaman_shackles"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "undying_decay"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "undying_soul_rip"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "undying_tombstone"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "earthshaker_fissure"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "earthshaker_enchant_totem"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "earthshaker_aftershock"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "phantom_lancer_spirit_lance"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "phantom_lancer_doppelwalk"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "phantom_lancer_phantom_edge"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "techies_sticky_bomb"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "techies_reactive_tazer"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "techies_suicide"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "legion_commander_overwhelming_odds"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "legion_commander_press_the_attack"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "legion_commander_moment_of_courage"
+    }
+   ]
+  },
+  {
+   "file": "20260619153347_1.jpg",
+   "width": 1920,
+   "height": 1080,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "ancient_apparition_ice_blast"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "earthshaker_echo_slam"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "legion_commander_duel"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "axe_berserkers_call"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "axe_battle_hunger"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "axe_counter_helix"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "visage_grave_chill"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "primal_beast_uproar"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "ancient_apparition_ice_vortex"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "ancient_apparition_chilling_touch"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "spectre_spectral_dagger"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "spectre_dispersion"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "marci_companion_run"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "shadow_shaman_ether_shock"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "shadow_shaman_shackles"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "undying_decay"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "undying_soul_rip"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "earthshaker_aftershock"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "legion_commander_overwhelming_odds"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "legion_commander_press_the_attack"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": null
+    }
+   ]
+  },
+  {
+   "file": "20260619153549_1.jpg",
+   "width": 1920,
+   "height": 1080,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "ancient_apparition_ice_blast"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "earthshaker_echo_slam"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "axe_berserkers_call"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "ancient_apparition_ice_vortex"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "shadow_shaman_ether_shock"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "undying_soul_rip"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": null
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "legion_commander_overwhelming_odds"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "legion_commander_press_the_attack"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": null
+    }
+   ]
+  },
+  {
+   "file": "20260619154314_1.jpg",
+   "width": 1920,
+   "height": 1080,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "witch_doctor_death_ward"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "gyrocopter_call_down"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "lina_laguna_blade"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": "puck_dream_coil"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "winter_wyvern_winters_curse"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "oracle_false_promise"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "treant_overgrowth"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "keeper_of_the_light_spirit_form"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": "kez_ravens_veil_ad"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "dark_willow_terrorize"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "furion_wrath_of_nature"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "enigma_black_hole"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "witch_doctor_paralyzing_cask"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "witch_doctor_voodoo_restoration"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "witch_doctor_maledict"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "oracle_fortunes_end"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "oracle_fates_edict"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "oracle_purifying_flames"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "gyrocopter_rocket_barrage"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "gyrocopter_homing_missile"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "gyrocopter_flak_cannon"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "winter_wyvern_arctic_burn"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "winter_wyvern_splinter_blast"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "winter_wyvern_cold_embrace"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "lina_dragon_slave"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "lina_light_strike_array"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "lina_fiery_soul"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "puck_illusory_orb"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "puck_waning_rift"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "puck_phase_shift"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "treant_natures_grasp"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "treant_leech_seed"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "treant_living_armor"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "enigma_malefice"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "enigma_demonic_conversion"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "enigma_midnight_pulse"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "keeper_of_the_light_illuminate"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "keeper_of_the_light_blinding_light"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "keeper_of_the_light_chakra_magic"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "furion_sprout"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "furion_teleportation"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "furion_force_of_nature"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "kez_falcon_rush_ad"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "kez_grappling_claw"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "kez_shodo_sai_ad"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "dark_willow_bramble_maze"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "dark_willow_shadow_realm"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "dark_willow_cursed_crown"
+    }
+   ]
+  },
+  {
+   "file": "屏幕截图 2026-07-07 143121.png",
+   "width": 1918,
+   "height": 1078,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "vengefulspirit_nether_swap"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "enigma_black_hole"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "phoenix_supernova"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": "shredder_chakram"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "lich_chain_frost"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "nyx_assassin_vendetta"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "primal_beast_pulverize"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "magnataur_reverse_polarity"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": "earth_spirit_magnetize"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "troll_warlord_battle_trance"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "night_stalker_darkness"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "drow_ranger_marksmanship"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "vengefulspirit_magic_missile"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "vengefulspirit_wave_of_terror"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "vengefulspirit_command_aura"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "nyx_assassin_impale"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "nyx_assassin_jolt"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "nyx_assassin_spiked_carapace"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "enigma_malefice"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "enigma_demonic_conversion"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "enigma_midnight_pulse"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "lich_frost_nova"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "lich_frost_shield"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "lich_sinister_gaze"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "phoenix_icarus_dive"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "phoenix_fire_spirits"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "phoenix_sun_ray"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "shredder_whirling_death"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "shredder_timber_chain"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "shredder_reactive_armor"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "primal_beast_onslaught"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "primal_beast_trample"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "primal_beast_uproar"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "drow_ranger_frost_arrows"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "drow_ranger_wave_of_silence"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "drow_ranger_multishot"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "magnataur_shockwave"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "magnataur_empower"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "magnataur_skewer"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "night_stalker_void"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "night_stalker_crippling_fear"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "tidehunter_kraken_shell"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "earth_spirit_boulder_smash"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "earth_spirit_rolling_boulder"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "earth_spirit_geomagnetic_grip"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "troll_warlord_fervor"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "troll_warlord_whirling_axes_ranged"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "troll_warlord_whirling_axes_melee"
+    }
+   ]
+  },
+  {
+   "file": "屏幕截图 2026-07-07 151032.png",
+   "width": 1918,
+   "height": 1078,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "huskar_life_break"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "dazzle_nothl_projection"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "magnataur_reverse_polarity"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": "primal_beast_pulverize"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "winter_wyvern_winters_curse"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "furion_wrath_of_nature"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "elder_titan_earth_splitter"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "windrunner_focusfire"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": "mars_arena_of_blood"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "lion_finger_of_death"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "witch_doctor_death_ward"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "ringmaster_wheel"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "huskar_inner_fire"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "huskar_burning_spear"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "huskar_berserkers_blood"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "furion_sprout"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "furion_teleportation"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "furion_force_of_nature"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "dazzle_poison_touch"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "dazzle_shallow_grave"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "dazzle_shadow_wave"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "winter_wyvern_arctic_burn"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "winter_wyvern_splinter_blast"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "winter_wyvern_cold_embrace"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "magnataur_shockwave"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "magnataur_empower"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "magnataur_skewer"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "primal_beast_onslaught"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "primal_beast_trample"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "primal_beast_uproar"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "elder_titan_echo_stomp"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "elder_titan_ancestral_spirit"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "elder_titan_natural_order"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "ringmaster_tame_the_beasts"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "ringmaster_the_box"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "ringmaster_impalement"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "windrunner_shackleshot"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "windrunner_powershot"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "windrunner_windrun"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "witch_doctor_paralyzing_cask"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "witch_doctor_voodoo_restoration"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "witch_doctor_maledict"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "mars_spear"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "mars_gods_rebuke"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "mars_bulwark"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "lion_impale"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "lion_voodoo"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "lion_mana_drain"
+    }
+   ]
+  },
+  {
+   "file": "屏幕截图 2026-07-07 153748.png",
+   "width": 1918,
+   "height": 1078,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "snapfire_mortimer_kisses"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "marci_unleash"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "undying_flesh_golem"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": "nyx_assassin_vendetta"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "dark_seer_wall_of_replica"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "lich_chain_frost"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "ember_spirit_fire_remnant"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "sandking_epicenter"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": "treant_overgrowth"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "hoodwink_sharpshooter"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "tusk_walrus_punch"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "necrolyte_reapers_scythe"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "snapfire_scatterblast"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "snapfire_firesnap_cookie"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "snapfire_lil_shredder"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "lich_frost_nova"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "lich_frost_shield"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "lich_sinister_gaze"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "marci_grapple"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "marci_companion_run"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "marci_bodyguard"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "dark_seer_vacuum"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "dark_seer_ion_shell"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "dark_seer_surge"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "undying_decay"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "undying_soul_rip"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "undying_tombstone"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "nyx_assassin_impale"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "nyx_assassin_jolt"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "nyx_assassin_spiked_carapace"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "ember_spirit_searing_chains"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "ember_spirit_sleight_of_fist"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "ember_spirit_flame_guard"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "necrolyte_death_pulse"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "necrolyte_ghost_shroud"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "necrolyte_heartstopper_aura"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "sandking_burrowstrike"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "sandking_sand_storm"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "sandking_scorpion_strike"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "tusk_ice_shards"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "tusk_snowball"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "tusk_tag_team"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "treant_natures_grasp"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "treant_leech_seed"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "treant_living_armor"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "hoodwink_acorn_shot"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "hoodwink_bushwhack"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "hoodwink_scurry"
+    }
+   ]
+  },
+  {
+   "file": "屏幕截图 2026-07-07 153844.png",
+   "width": 1918,
+   "height": 1073,
+   "cells": [
+    {
+     "zone": "ultimate",
+     "hero": 0,
+     "slot": 0,
+     "ability": "undying_flesh_golem"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 1,
+     "slot": 0,
+     "ability": "oracle_false_promise"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 2,
+     "slot": 0,
+     "ability": "pangolier_gyroshell"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 7,
+     "slot": 0,
+     "ability": "nevermore_requiem"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 6,
+     "slot": 0,
+     "ability": "jakiro_macropyre"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 5,
+     "slot": 0,
+     "ability": "kez_ravens_veil_ad"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 3,
+     "slot": 0,
+     "ability": "tidehunter_ravage"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 4,
+     "slot": 0,
+     "ability": "slark_shadow_dance"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 10,
+     "slot": 0,
+     "ability": "earth_spirit_magnetize"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 11,
+     "slot": 0,
+     "ability": "batrider_flaming_lasso"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 9,
+     "slot": 0,
+     "ability": "alchemist_chemical_rage"
+    },
+    {
+     "zone": "ultimate",
+     "hero": 8,
+     "slot": 0,
+     "ability": "sven_gods_strength"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 1,
+     "ability": "undying_decay"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 2,
+     "ability": "undying_soul_rip"
+    },
+    {
+     "zone": "standard",
+     "hero": 0,
+     "slot": 3,
+     "ability": "undying_tombstone"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 1,
+     "ability": "kez_echo_slash"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 2,
+     "ability": "kez_grappling_claw"
+    },
+    {
+     "zone": "standard",
+     "hero": 5,
+     "slot": 3,
+     "ability": "kez_shodo_sai_ad"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 1,
+     "ability": "oracle_fortunes_end"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 2,
+     "ability": "oracle_fates_edict"
+    },
+    {
+     "zone": "standard",
+     "hero": 1,
+     "slot": 3,
+     "ability": "oracle_purifying_flames"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 1,
+     "ability": "invoker_emp_ad"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 2,
+     "ability": "invoker_forge_spirit_ad"
+    },
+    {
+     "zone": "standard",
+     "hero": 6,
+     "slot": 3,
+     "ability": "invoker_ghost_walk_ad"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 1,
+     "ability": "pangolier_swashbuckle"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 2,
+     "ability": "pangolier_shield_crash"
+    },
+    {
+     "zone": "standard",
+     "hero": 2,
+     "slot": 3,
+     "ability": "pangolier_lucky_shot"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 1,
+     "ability": "nevermore_shadowraze2"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 2,
+     "ability": "nevermore_frenzy"
+    },
+    {
+     "zone": "standard",
+     "hero": 7,
+     "slot": 3,
+     "ability": "nevermore_dark_lord"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 1,
+     "ability": "tidehunter_gush"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 2,
+     "ability": "tidehunter_kraken_shell"
+    },
+    {
+     "zone": "standard",
+     "hero": 3,
+     "slot": 3,
+     "ability": "tidehunter_anchor_smash"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 1,
+     "ability": "sven_storm_bolt"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 2,
+     "ability": "sven_great_cleave"
+    },
+    {
+     "zone": "standard",
+     "hero": 8,
+     "slot": 3,
+     "ability": "sven_warcry"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 1,
+     "ability": "slark_dark_pact"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 2,
+     "ability": "slark_pounce"
+    },
+    {
+     "zone": "standard",
+     "hero": 4,
+     "slot": 3,
+     "ability": "slark_saltwater_shiv"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 1,
+     "ability": "alchemist_acid_spray"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 2,
+     "ability": "alchemist_unstable_concoction"
+    },
+    {
+     "zone": "standard",
+     "hero": 9,
+     "slot": 3,
+     "ability": "alchemist_corrosive_weaponry"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 1,
+     "ability": "earth_spirit_boulder_smash"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 2,
+     "ability": "earth_spirit_rolling_boulder"
+    },
+    {
+     "zone": "standard",
+     "hero": 10,
+     "slot": 3,
+     "ability": "earth_spirit_geomagnetic_grip"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 1,
+     "ability": "batrider_sticky_napalm"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 2,
+     "ability": "batrider_flamebreak"
+    },
+    {
+     "zone": "standard",
+     "hero": 11,
+     "slot": 3,
+     "ability": "batrider_firefly"
+    }
+   ]
+  }
+ ]
+}

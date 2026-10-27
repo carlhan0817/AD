@@ -5,9 +5,6 @@
 // 不是为像素级识别标的——必须叠加固定偏移 + 每格小范围 refine(见 hero_recognize.ts)
 // 才能用于识别。本模块只负责"坐标 → 像素 Rect"的纯几何推导,不做识别。
 // 见 docs/superpowers/specs/2026-07-07-hero-cell-recognition-design.md。
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { Rect, ClientRect } from "./roi";
 
 export interface HeroCell extends Rect {
@@ -21,17 +18,22 @@ export const HERO_OFFSET_1080P = { dx: 0, dy: -4 };
 
 interface ModelsCoordEntry { x: number; y: number; width: number; height: number; hero_order: number; }
 
-function loadModelsCoords1080p(): ModelsCoordEntry[] {
-  const here = fileURLToPath(import.meta.url);
-  // core/src/recognition/hero_layout.ts → 仓库根:向上 3 层(recognition→src→core)+ 1(core→根)。
-  const repoRoot = join(here, "..", "..", "..", "..");
-  const raw = readFileSync(join(repoRoot, "layout_coordinates.json"), "utf-8");
-  const parsed = JSON.parse(raw) as { resolutions: Record<string, { models_coords: ModelsCoordEntry[] }> };
-  return parsed.resolutions["1920x1080"].models_coords;
-}
-
-// 模块加载时读一次(与 POOL_CELLS_1080P 的常量表用法一致,运行期不重复读文件)。
-const MODELS_COORDS_1080P = loadModelsCoords1080p();
+// 取自仓库根 layout_coordinates.json 的 resolutions["1920x1080"].models_coords,抄成常量表:
+// 运行时不读文件——打包进 Electron 后源码相对路径不再成立,模块加载时读文件会直接崩。
+const MODELS_COORDS_1080P: ModelsCoordEntry[] = [
+  { x: 627, y: 343, width: 49, height: 46, hero_order: 0 },
+  { x: 619, y: 409, width: 49, height: 47, hero_order: 1 },
+  { x: 609, y: 477, width: 50, height: 50, hero_order: 2 },
+  { x: 593, y: 591, width: 53, height: 56, hero_order: 3 },
+  { x: 581, y: 671, width: 55, height: 59, hero_order: 4 },
+  { x: 570, y: 756, width: 56, height: 62, hero_order: 10 },
+  { x: 1244, y: 343, width: 49, height: 46, hero_order: 5 },
+  { x: 1253, y: 409, width: 49, height: 47, hero_order: 6 },
+  { x: 1261, y: 477, width: 50, height: 50, hero_order: 7 },
+  { x: 1274, y: 591, width: 53, height: 56, hero_order: 8 },
+  { x: 1284, y: 671, width: 55, height: 59, hero_order: 9 },
+  { x: 1295, y: 756, width: 56, height: 62, hero_order: 11 },
+];
 
 /** 返回技能池两端 12 个英雄格的绝对像素 Rect,按 hero_order 0..11 升序。
  *  非 1920×1080 时按 rect 尺寸等比缩放——但与 poolCellRects 不同:近 1080p(±10px 容差内,
