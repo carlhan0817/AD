@@ -12,24 +12,29 @@ function fill(f: RgbFrame, x0: number, y0: number, x1: number, y1: number, px: (
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) f.data.set(px(x, y), (y * f.width + x) * 3);
 }
 const card = (row: number) => playerCards(RECT)[row];
-/** 在某张卡的标题行写「白字」(这里用一块白色代替文字)。 */
-function whiteTitle(f: RgbFrame, row: number, color = [240, 240, 240]) {
+/** 在某张卡朝外的那条边上画一道外框(左列卡画左边缘,右列卡画右边缘)。 */
+function outline(f: RgbFrame, row: number, color = [20, 114, 0]) {
   const c = card(row), left = row < 5;
-  fill(f, c.x + (left ? 100 : 40), c.y + 12, c.x + (left ? 160 : 100), c.y + 30, () => color);
+  const x0 = left ? c.x : c.x + c.w - 6;
+  fill(f, x0, c.y + 10, x0 + 4, c.y + 136, () => color);
 }
 
 describe("findMyRow", () => {
-  it("只有一张卡标题是白字 → 就是我", () => {
-    const f = blank(); whiteTitle(f, 7);
-    expect(findMyRow(f, RECT)).toBe(7);
+  it("左列:左边缘有亮绿外框的那张就是我", () => {
+    const f = blank(); outline(f, 0, [86, 253, 0]);
+    expect(findMyRow(f, RECT)).toBe(0);
   });
-  it("没有白字,或两张差不多白 → 认不出", () => {
+  it("右列:右边缘有暗绿外框的那张就是我(右4 = 行 8)", () => {
+    const f = blank(); outline(f, 8);
+    expect(findMyRow(f, RECT)).toBe(8);
+  });
+  it("没有外框,或两张都有 → 认不出", () => {
     expect(findMyRow(blank(), RECT)).toBeNull();
-    const f = blank(); whiteTitle(f, 1); whiteTitle(f, 6);
+    const f = blank(); outline(f, 1); outline(f, 6);
     expect(findMyRow(f, RECT)).toBeNull();
   });
-  it("队伍色(绿)的标题不算", () => {
-    const f = blank(); whiteTitle(f, 2, [40, 220, 40]);
+  it("队友卡边缘那种暗绿底色不算外框", () => {
+    const f = blank(); outline(f, 2, [4, 44, 2]);
     expect(findMyRow(f, RECT)).toBeNull();
   });
 });

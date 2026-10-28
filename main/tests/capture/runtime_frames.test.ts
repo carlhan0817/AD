@@ -28,7 +28,7 @@ const NAMES = join(ROOT, "models", "classifier", "class_names.json");
 const INDEX = process.env.AD_PHASH_INDEX ?? join(ROOT, "models", "templates", "phash_index.json");
 
 // 目视核对过的帧(按文件名里的时间);me/active: 0–4 左列,5–9 右列。
-const EXPECT: Record<string, { taken: number[]; active: number | null; myPicks?: string[]; myHero?: string | null }> = {
+const EXPECT: Record<string, { taken: number[]; active: number | null; myPicks?: string[]; myHero?: string | null; me?: number }> = {
   "07-41-38": { taken: [], active: null, myPicks: [], myHero: null },
   "07-44-28": { taken: [1, 3, 11], active: null, myPicks: ["queenofpain_blink"], myHero: null },
   "07-44-40": { taken: [1, 3, 6, 7, 11], active: null, myPicks: ["queenofpain_blink"], myHero: "naga_siren" },
@@ -38,6 +38,10 @@ const EXPECT: Record<string, { taken: number[]; active: number | null; myPicks?:
   "07-47-05": { taken: [0, 1, 2, 3, 5, 6, 7, 8, 11], active: 0, myHero: "naga_siren" },
   "07-52-45": { taken: [], active: null, myPicks: [], myHero: null },
   "07-53-37": { taken: [3], active: 0, myHero: "morphling" },
+  // 2026-10-28 两局自定义:第一局坐左1,第二局坐右4(行 8)。
+  "05-31-14": { taken: [], active: null, myPicks: [], myHero: null, me: 0 },
+  "05-32-43": { taken: [], active: null, myPicks: [], myHero: null, me: 8 },
+  "05-32-55": { taken: [], active: null, myPicks: [], myHero: null, me: 8 },
 };
 
 const hasAssets = existsSync(FRAMES) && existsSync(DB) && existsSync(MODEL) && existsSync(SEL) && existsSync(INDEX) &&
@@ -90,8 +94,8 @@ describe.skipIf(!hasAssets)("运行时真帧:完整扫描流程(按时间顺序)
     for (const [k, e] of Object.entries(EXPECT)) expect([k, results.get(k)!.activeRow]).toEqual([k, e.active]);
   });
 
-  it("我坐左列第一张(行 0);一局里认出过就记住", () => {
-    for (const k of Object.keys(EXPECT)) expect([k, results.get(k)!.myRow]).toEqual([k, 0]);
+  it("认出我坐哪(左1 = 行 0,右4 = 行 8);一局里认出过就记住", () => {
+    for (const [k, e] of Object.entries(EXPECT)) expect([k, results.get(k)!.myRow]).toEqual([k, e.me ?? 0]);
   });
 
   it("我卡上已选的技能与画面一致,我的英雄选了才认、认了就对", () => {

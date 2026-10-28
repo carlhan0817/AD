@@ -1,5 +1,5 @@
 // core/src/recognition/card_reading.ts
-// 读玩家卡:哪张是「我」、现在轮到谁、每张卡上已经选了哪些技能。
+// 读玩家卡:哪张是「我」(绿色外框)、现在轮到谁(金色底)、每张卡上已经选了哪些技能。
 // 判据都在 2026-10-27 真机 15 帧(5 局)上量过,见各常量注释。
 import { CLASSIFIER_INPUT_SIZE, type Classifier } from "./classifier";
 import { CLASS_NAME_FIXES, ML_CONFIDENCE } from "./pool_classify";
@@ -32,26 +32,33 @@ function eachPixel(frame: RgbFrame, x0: number, x1: number, y0: number, y1: numb
   return n;
 }
 
-/** 标题行里接近白色的像素占比。本人的卡标题是白字,别人的是队伍色(左绿右红)。 */
-export function whiteTitleFraction(frame: RgbFrame, card: PlayerCard): number {
-  const b = bands(card);
-  let white = 0;
-  const n = eachPixel(frame, b.x0, b.x1, b.titleY0, b.titleY1, (r, g, bl) => {
-    if (Math.min(r, g, bl) > 185 && Math.max(r, g, bl) - Math.min(r, g, bl) < 40) white++;
+/** 卡朝外那条边上「饱和的绿色」像素占比。本人的卡有一圈绿色外框(坐左列时在卡的左边缘,
+ *  坐右列时在右边缘),别人的卡没有。2026-10-28 发现:原先用「标题是白字」只在坐左列时成立,
+ *  坐右列时本人标题和队友一样是绿字,认不出。 */
+export function myOutlineFraction(frame: RgbFrame, card: PlayerCard): number {
+  const sx = card.w / 320, sy = card.h / 146;
+  const left = card.row < 5;
+  // 外框落在卡的外边缘往里约 10px 以内(实测左列在 x+0..x+4,右列在 x+308..x+316)。
+  const x0 = left ? card.x - Math.round(4 * sx) : card.x + card.w - Math.round(10 * sx);
+  const x1 = left ? card.x + Math.round(10 * sx) : card.x + card.w + Math.round(4 * sx);
+  let green = 0;
+  const n = eachPixel(frame, x0, x1, card.y + Math.round(20 * sy), card.y + Math.round(126 * sy), (r, g, b) => {
+    if (g > 90 && g > 2.5 * r && b < 40) green++;
   });
-  return n === 0 ? 0 : white / n;
+  return n === 0 ? 0 : green / n;
 }
 
-// 真机实测:本人卡标题白字占比 6–8%,别人的卡 0%(被我们自己的悬浮窗盖住的卡也会出现白字,
-// 所以面板已挪到不挡卡的位置)。要求最高的那张够白、且明显高于第二名。
-export const MY_TITLE_MIN_WHITE = 0.04;
+// 真机 19 帧(两个座位:左1、右4)实测:本人卡外框占比 7–43%(坐左列时外框亮绿 ≈(86,253,0),
+// 坐右列时暗绿 ≈(20,114,0);轮到自己时金色底会压低到 7%),其他卡全部 0%
+// (队友卡边缘是 ≈(4,44,2) 的暗底色,不够绿)。要求最高的那张够绿、且明显高于第二名。
+export const MY_OUTLINE_MIN = 0.03;
 
-/** 哪一行是「我」;认不出(没有一张够白,或有两张差不多白)返回 null。 */
+/** 哪一行是「我」;认不出(没有一张有外框,或有两张差不多)返回 null。 */
 export function findMyRow(frame: RgbFrame, rect: ClientRect): number | null {
-  const scored = playerCards(rect).map((c) => ({ row: c.row, w: whiteTitleFraction(frame, c) }))
-    .sort((a, b) => b.w - a.w);
+  const scored = playerCards(rect).map((c) => ({ row: c.row, v: myOutlineFraction(frame, c) }))
+    .sort((a, b) => b.v - a.v);
   const [first, second] = scored;
-  if (first.w < MY_TITLE_MIN_WHITE || second.w > first.w / 2) return null;
+  if (first.v < MY_OUTLINE_MIN || second.v > first.v / 2) return null;
   return first.row;
 }
 
