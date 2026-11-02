@@ -8,7 +8,7 @@
 // overlay:guide 频道当前无人消费,renderer 端展示待后续任务接 preload bridge。
 import { app, BrowserWindow, globalShortcut, ipcMain, screen } from "electron";
 import { join } from "node:path";
-import { appendFileSync, existsSync, mkdirSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import sharp from "sharp";
 
 // 诊断日志:主进程 console 在 electron-vite dev 终端不回显,故同时落盘到 app/.live.log,
@@ -36,7 +36,9 @@ import { portraitVariants } from "@ad/core/recognition/hero_portrait";
 import { remainingQuota } from "@ad/core/statemachine/quota";
 import { buildAbilityLookup } from "@ad/core/db/ability_lookup";
 import { ReferenceDb } from "@ad/core/db/reference";
-import { defaultScoringConfig } from "@ad/core/scoring/config";
+import { defaultScoringConfig, loadScoringConfig } from "@ad/core/scoring/config";
+import { buildSimilarMap, loadAbilityTags } from "@ad/core/scoring/similar";
+import { roundOf } from "@ad/core/scoring/weights";
 import type { DraftState, PlayerState } from "@ad/shared/types/draft";
 import type { ScoredCandidate } from "@ad/shared/types/scoring";
 
@@ -46,10 +48,12 @@ const FALLBACK_RECT: WindowRect = { x: 0, y: 0, width: 1920, height: 1080 };
 // 路径锚点:app.getAppPath() 在 dev(electron-vite dev,cwd=app/)和打包后均稳定指向
 // app/ 目录(含 app/package.json 的目录),与 main/src/capture/monitor_once.ts 用
 // import.meta.url 相对 main/src 解出的 repo 根 + models|pipeline 路径等价。
-function resolveModelPaths(): { index: string; db: string; model: string; classNames: string; selection: string } {
+function resolveModelPaths(): { index: string; db: string; model: string; classNames: string; selection: string; tags: string; scoring: string } {
   const appRoot = app.getAppPath(); // .../AD/app
   return {
     selection: join(appRoot, "../models/templates/sprites/panorama/images/heroes/selection"),
+    tags: join(appRoot, "../models/tags/ability_tags.json"),
+    scoring: join(appRoot, "../scoring_config.json"),
     index: join(appRoot, "../models/templates/phash_index.json"),
     db: join(appRoot, "../pipeline/out/reference.db"),
     model: join(appRoot, "../models/classifier/ability_classifier_fp16.onnx"),
@@ -149,8 +153,15 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
     diag(`[scan] assets OK: 分类器 ${clf.classNames.length} 类, 技能表 ${lookup.size} 条, pHash 索引 ${index ? `${index.length} 条` : "无(不启用第二意见)"}, ` +
       `英雄立绘 ${existsSync(paths.selection) ? "有" : "无(不认我的英雄)"}`);
 
+    const similar = existsSync(paths.tags) ? buildSimilarMap(loadAbilityTags(paths.tags), lookup) : undefined;
+    diag(`[scan] 同类技能表 ${similar ? `${similar.size} 条` : "无"}`);
+    // 权重放在仓库根的 scoring_config.json,每次扫描都重新读:改完存盘,下一次扫描就生效,不用重启。
+    // 文件写错时记日志并沿用默认值,不影响扫描。
+    const readCfg = () => {
+      try { return existsSync(paths.scoring) ? loadScoringConfig(readFileSync(paths.scoring, "utf-8")) : defaultScoringConfig(); }
+      catch (err) { diag(`[scan] scoring_config.json 读取失败,用默认权重: ${err}`); return defaultScoringConfig(); }
+    };
     const memory = new PoolMemory();
-    const cfg = defaultScoringConfig();
     let version = 0;
     let busy = false;
     const scan = async (): Promise<void> => {
@@ -163,7 +174,7 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
         const streamed = STREAM_CAPTURE ? await captureViaStream(win) : null;
         const frames = streamed ?? await captureScreenFrames();
         const t1 = Date.now();
-        const deps: PoolScanDeps = { clf, lookup, ref, cfg, rect, memory, index, heroPortraits };
+        const deps: PoolScanDeps = { clf, lookup, ref, cfg: readCfg(), rect, memory, index, heroPortraits, similar };
         const res = await scanPool(frames, deps);
         diag(`[scan] 帧 ${frames.rgb.width}x${frames.rgb.height} 截图(${streamed ? "画面流" : "普通"}) ${t1 - t0}ms 识别 ${Date.now() - t1}ms | ` +
           `池内技能 ${res.pool.length} 可选英雄 ${res.heroes.length}/12(已选走位置 ${res.takenHeroes.join(",") || "无"}) 没认出 ${res.unknownCells} 格` +
@@ -178,7 +189,7 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
         }
         const rowText = (row: number | null) => (row === null ? "?" : row < 5 ? `左${row + 1}` : `右${row - 4}`);
         const myAbilities = res.myPicks ? [...res.myPicks.normals, ...(res.myPicks.ultimate ? [`大招 ${res.myPicks.ultimate}`] : [])] : [];
-        diag(`[scan]   我=${rowText(res.myRow)} 轮到=${rowText(res.activeRow)} 第${res.pickIndex}手 | ` +
+        diag(`[scan]   我=${rowText(res.myRow)} 选位=${res.seat ?? "?"} 轮到=${rowText(res.activeRow)} 第${res.pickIndex}手(第${roundOf(res.pickIndex)}轮) | ` +
           `我的英雄 ${res.me.hero === null ? "未选/没认出" : heroName(-res.me.hero)} | 我已选 ${myAbilities.join(", ") || "无"}` +
           `${res.myPicks && res.myPicks.unknown > 0 ? `(另有 ${res.myPicks.unknown} 格没认出)` : ""}`);
         void saveScanFrame(frames.rgb, version + 1);
@@ -197,7 +208,7 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
           ? "没认出你坐哪(按没选过东西推荐)"
           : full
             ? `你:${rowText(res.myRow)} · 已选满`
-            : `你:${rowText(res.myRow)} · 第${res.pickIndex}手${res.activeRow === res.myRow ? " · 轮到你" : ""}` +
+            : `你:${rowText(res.myRow)} · 第${roundOf(res.pickIndex)}轮第${res.pickIndex}手${res.activeRow === res.myRow ? " · 轮到你" : ""}` +
               `${res.me.hero !== null ? ` · ${heroName(-res.me.hero)}` : ""}`;
         const snap: OverlaySnapshot = {
           state: { activeRow: res.myRow ?? 0, players },

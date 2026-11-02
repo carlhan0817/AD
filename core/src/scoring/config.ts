@@ -5,8 +5,13 @@ import { KNOWN_SIGNALS } from "./signals/index";
 
 export function defaultScoringConfig(): ScoringConfig {
   return {
-    baseWeights: { base: 1.0, synergy: 1.5, aghs: 0.8, shard: 0.5, pos: 0.6 },
+    // 当前打分机制:单技能/英雄强度逐轮递减,搭配逐轮上升。aghs/shard/pos 暂时关闭(0),留作以后调。
+    // 数值是占位的起点,直接改仓库根的 scoring_config.json 就行,不用改代码。
+    baseWeights: { base: 1.0, synergy: 1.0, aghs: 0, shard: 0, pos: 0 },
     alpha: 0.5, beta: 0.4, sigma: 10, firstRoundSize: 10, topK: 4,
+    roundWeights: { base: [1.0, 0.8, 0.6, 0.4, 0.2], synergy: [0.2, 0.4, 0.6, 0.8, 1.0] },
+    seatBaseBonus: 0,
+    pairFallback: { single: 0.5, similar: 0.5 },
   };
 }
 
@@ -27,5 +32,8 @@ export function loadScoringConfig(json: string): ScoringConfig {
     sigma: parsed.sigma ?? d.sigma,
     firstRoundSize: parsed.firstRoundSize ?? d.firstRoundSize,
     topK: parsed.topK ?? d.topK,
+    roundWeights: parsed.roundWeights ?? d.roundWeights,
+    seatBaseBonus: parsed.seatBaseBonus ?? d.seatBaseBonus,
+    pairFallback: parsed.pairFallback ?? d.pairFallback,
   };
 }

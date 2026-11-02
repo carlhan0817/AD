@@ -19,9 +19,10 @@ describe("signal registry", () => {
 });
 
 describe("scoring config", () => {
-  it("default config matches 打分细则 §3 recommended params", () => {
+  it("default config: round weights on, aghs/shard/pos off", () => {
     const cfg = defaultScoringConfig();
-    expect(cfg.baseWeights).toEqual({ base: 1.0, synergy: 1.5, aghs: 0.8, shard: 0.5, pos: 0.6 });
+    expect(cfg.baseWeights).toEqual({ base: 1.0, synergy: 1.0, aghs: 0, shard: 0, pos: 0 });
+    expect(cfg.roundWeights!.base.length).toBe(5);
     expect(cfg.alpha).toBe(0.5);
     expect(cfg.beta).toBe(0.4);
     expect(cfg.sigma).toBe(10);

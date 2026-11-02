@@ -13,10 +13,11 @@ export function recommend(
   pickIndex: number | null,
   q: Queryable,
   cfg: ScoringConfig,
+  extras: { seat?: number | null; similar?: ReadonlyMap<number, readonly number[]> } = {},
 ): ScoredCandidate[] {
   const legal = hardFilter(pool, me);             // 第 0 步:先于一切打分
   if (legal.length === 0) return [];
-  const ctx = buildScoringContext(q, me, pickIndex);
+  const ctx = buildScoringContext(q, me, pickIndex, { ...extras, pairFallback: cfg.pairFallback });
   const ranked = scoreCandidates(legal, ctx, cfg);
   return ranked.slice(0, cfg.topK);                // Top 3~4
 }

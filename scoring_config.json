@@ -1,0 +1,31 @@
+{
+  "roundWeights": {
+    "base": [
+      1.0,
+      0.8,
+      0.6,
+      0.4,
+      0.2
+    ],
+    "synergy": [
+      0.2,
+      0.4,
+      0.6,
+      0.8,
+      1.0
+    ]
+  },
+  "seatBaseBonus": 0,
+  "pairFallback": {
+    "single": 0.5,
+    "similar": 0.5
+  },
+  "baseWeights": {
+    "base": 1.0,
+    "synergy": 1.0,
+    "aghs": 0,
+    "shard": 0,
+    "pos": 0
+  },
+  "topK": 4
+}

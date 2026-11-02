@@ -12,7 +12,7 @@ export function scoreCandidates(
   cfg: ScoringConfig,
 ): ScoredCandidate[] {
   const signals = buildSignals(cfg);
-  const weights = resolveWeights(cfg, ctx.pickIndex); // 本手动态权重
+  const weights = resolveWeights(cfg, ctx.pickIndex, ctx.seat ?? null); // 本手动态权重
   const activeIds = (Object.keys(weights) as SignalId[]).filter(
     (id) => (weights[id] ?? 0) !== 0 && signals[id] !== undefined,
   );

@@ -24,8 +24,8 @@ import type { Candidate, ScoredCandidate, ScoringConfig } from "@ad/shared/types
 import type { PlayerState } from "@ad/shared/types/draft";
 import type { WindowRect } from "../ffi/geometry";
 
-// 打分规则里的「第几手」只数技能(1..40,见 打分细则 §2③),= 池里已变空的技能格数 + 1。
-const MAX_ABILITY_PICKS = 40;
+// 10 人 × 5 轮 = 50 手,zigzag 顺序,英雄也算一手(真机:坐第一个选的人依次是第 1、20、21、40、41 手)。
+const TOTAL_PICKS = 50;
 
 export interface PoolScanDeps {
   clf: Classifier;
@@ -40,6 +40,8 @@ export interface PoolScanDeps {
   memory: PoolMemory;
   /** pHash 索引(可不给):有则启用「第二意见」与英雄模型图像核对。 */
   index?: IndexEntry[];
+  /** 技能 → 同类技能(buildSimilarMap),搭配数据缺失时用。 */
+  similar?: ReadonlyMap<number, readonly number[]>;
   /** 某英雄选取立绘的比对变体(portraitVariants);给了才认「我」卡上的英雄。 */
   heroPortraits?: (heroId: number) => Promise<Float32Array[] | null>;
 }
@@ -65,8 +67,10 @@ export interface PoolScanResult {
   me: PlayerState;
   /** 我卡上读到的技能名(给日志看)。 */
   myPicks: CardPicks | null;
-  /** 第几手(只数技能,1..40)。 */
+  /** 第几手(1..50,英雄也算)。 */
   pickIndex: number;
+  /** 我的选位(第一轮第几个选,1..10);还没轮到过我时不知道,为 null。 */
+  seat: number | null;
   recommendations: ScoredCandidate[];
 }
 
@@ -86,7 +90,10 @@ export async function scanPool(
       return index ? verifyHeroCandidate(frames.gray, deps.rect, heroPos, -heroId, index) : false;
     },
   });
-  const snapshot = deps.memory.observe(reading, takenHeroPositions(frames.rgb, deps.rect));
+  // 先读全部玩家卡:卡上有的技能才算确实被选走(说明框盖住的格子也会显得空)。
+  const cards = await readCardPicks(frames.rgb, deps.rect, deps.clf);
+  const onCards = new Set(cards.flatMap((c) => [...c.normals, ...(c.ultimate ? [c.ultimate] : [])]));
+  const snapshot = deps.memory.observe(reading, takenHeroPositions(frames.rgb, deps.rect), (n) => onCards.has(n));
 
   const pool: number[] = [];
   const candidates: Candidate[] = [];
@@ -116,8 +123,15 @@ export async function scanPool(
   let myPicks: CardPicks | null = null;
   const me: PlayerState = { row: myRow ?? 0, hero: null, normals: [], ultimates: [] };
   if (myRow !== null) {
-    const allowed = new Set(snapshot.names.filter((n): n is string => n !== null));
-    myPicks = (await readCardPicks(frames.rgb, deps.rect, deps.clf, allowed))[myRow];
+    // 只采信本局池子里出现过的技能。
+    const inPool = new Set(snapshot.names.filter((n): n is string => n !== null));
+    const raw = cards[myRow];
+    const normals = raw.normals.filter((n) => inPool.has(n));
+    const ultimate = raw.ultimate !== null && inPool.has(raw.ultimate) ? raw.ultimate : null;
+    myPicks = {
+      ...raw, normals, ultimate,
+      unknown: raw.unknown + raw.normals.length - normals.length + (raw.ultimate !== null && ultimate === null ? 1 : 0),
+    };
     for (const n of myPicks.normals) { const v = deps.lookup.get(n)?.valveId; if (v !== undefined) me.normals.push(v); }
     if (myPicks.ultimate !== null) { const v = deps.lookup.get(myPicks.ultimate)?.valveId; if (v !== undefined) me.ultimates.push(v); }
     if (deps.memory.myHeroId === null && deps.heroPortraits !== undefined && takenHeroes.size > 0) {
@@ -133,20 +147,25 @@ export async function scanPool(
     }
     if (deps.memory.myHeroId !== null) me.hero = -deps.memory.myHeroId;
   }
-  const abilitiesGone = snapshot.names.filter((n, i) => n !== null && !snapshot.available[i]).length;
-  const pickIndex = Math.min(MAX_ABILITY_PICKS, abilitiesGone + 1);
+  const abilitiesGone = snapshot.available.filter((v) => !v).length;
+  const pickIndex = Math.min(TOTAL_PICKS, abilitiesGone + takenHeroes.size + 1);
+  // 轮到我的时候才知道我的选位:奇数轮正序,偶数轮倒序(zigzag)。
+  if (activeRow !== null && activeRow === myRow) {
+    const round = Math.ceil(pickIndex / 10), inRound = pickIndex - (round - 1) * 10;
+    deps.memory.rememberMySeat(round % 2 === 1 ? inRound : 11 - inRound);
+  }
+  const seat = deps.memory.mySeat;
   // 认出了「我」才用上下文(已选技能、配额、第几手);认不出时 pickIndex 也不用,免得按错的人推荐。
-  // 技能与英雄分开排:英雄在数据里没有「平均第几手被选走」,选位信号对英雄恒为 0,
-  // 而前几手时技能的选位信号是负的——混在一起排,第 1 手会全是英雄(真机帧实测)。
-  // 所以技能取前 topK−1 个,英雄(还没选英雄时)单独给最好的 1 个,排在最后。
+  // 技能与英雄分开排:技能取前 topK−1 个,英雄(还没选英雄时)单独给最好的 1 个,排在最后。
   const pi = myRow === null ? null : pickIndex;
-  const bestHero = recommend(candidates.filter((c) => c.slotType === "hero"), me, pi, deps.ref, deps.cfg).slice(0, 1);
+  const extras = { seat, similar: deps.similar };
+  const bestHero = recommend(candidates.filter((c) => c.slotType === "hero"), me, pi, deps.ref, deps.cfg, extras).slice(0, 1);
   const abilityCount = Math.max(1, deps.cfg.topK - bestHero.length);
-  const abilityRecs = recommend(candidates.filter((c) => c.slotType !== "hero"), me, pi, deps.ref, { ...deps.cfg, topK: abilityCount });
+  const abilityRecs = recommend(candidates.filter((c) => c.slotType !== "hero"), me, pi, deps.ref, { ...deps.cfg, topK: abilityCount }, extras);
   const recommendations = [...abilityRecs, ...bestHero];
   return {
     snapshot, cells: reading.cells, groups: reading.groups, pool, heroes,
     takenHeroes: [...takenHeroes].sort((a, b) => a - b), unknownCells,
-    myRow, activeRow, me, myPicks, pickIndex, recommendations,
+    myRow, activeRow, me, myPicks, pickIndex, seat, recommendations,
   };
 }

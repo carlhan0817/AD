@@ -12,6 +12,7 @@ export function buildScoringContext(
   q: Queryable,
   me: PlayerState,
   pickIndex: number | null,
+  extras: Pick<ScoringContext, "seat" | "similar" | "pairFallback"> = {},
 ): ScoringContext {
   // q.all() 内部用一次性 prepared statement 并自动 finalize,无需手动管理;
   // 连接生命周期由调用方/ReferenceDb 拥有,这里不 close。
@@ -41,5 +42,5 @@ export function buildScoringContext(
     aghs.set(r.ability_id, { scepterGain: r.scepter_gain, shardGain: r.shard_gain });
   }
 
-  return { me, pickIndex, winrate, pairWinrate, aghs };
+  return { me, pickIndex, winrate, pairWinrate, aghs, ...extras };
 }

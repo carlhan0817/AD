@@ -10,6 +10,8 @@ export interface ConfigControls {
   sigma: number;
   firstRoundSize: number;
   topK: number;
+  /** 控件不编辑的字段(轮次权重等),原样带回去。 */
+  rest: Pick<ScoringConfig, "roundWeights" | "seatBaseBonus" | "pairFallback">;
 }
 
 export function configToControls(cfg: ScoringConfig): ConfigControls {
@@ -17,6 +19,7 @@ export function configToControls(cfg: ScoringConfig): ConfigControls {
     weights: (Object.entries(cfg.baseWeights) as [SignalId, number][]).map(([id, weight]) => ({ id, weight })),
     alpha: cfg.alpha, beta: cfg.beta, sigma: cfg.sigma,
     firstRoundSize: cfg.firstRoundSize, topK: cfg.topK,
+    rest: { roundWeights: cfg.roundWeights, seatBaseBonus: cfg.seatBaseBonus, pairFallback: cfg.pairFallback },
   };
 }
 
@@ -27,5 +30,6 @@ export function controlsToConfig(c: ConfigControls): ScoringConfig {
     baseWeights,
     alpha: c.alpha, beta: c.beta, sigma: c.sigma,
     firstRoundSize: c.firstRoundSize, topK: c.topK,
+    ...c.rest,
   };
 }

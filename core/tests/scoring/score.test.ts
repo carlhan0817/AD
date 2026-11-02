@@ -37,9 +37,16 @@ describe("scoreCandidates (dynamic weighting)", () => {
     expect(ranked.map((r) => r.candidate.valveId)).toEqual([5052, -7, 5053]);
   });
 
-  it("front pick zeroes synergy contribution (dynamic weight)", () => {
+  it("first round: synergy counts little, last round: most (round weights)", () => {
+    const early = scoreCandidates(POOL, ctx(5), defaultScoringConfig()).find((r) => r.candidate.valveId === 5052)!;
+    const late = scoreCandidates(POOL, ctx(45), defaultScoringConfig()).find((r) => r.candidate.valveId === 5052)!;
+    expect(late.breakdown.synergy!).toBeGreaterThan(early.breakdown.synergy!);
+    expect(late.breakdown.base!).toBeLessThan(early.breakdown.base!);
+  });
+
+  it("without round weights, front pick zeroes synergy (legacy dynamic weight)", () => {
     // P=1 → w_synergy=0 → 5052 的 breakdown 不含 synergy 贡献(或为 0)
-    const ranked = scoreCandidates(POOL, ctx(1), defaultScoringConfig());
+    const ranked = scoreCandidates(POOL, ctx(1), { ...defaultScoringConfig(), roundWeights: undefined });
     const top = ranked.find((r) => r.candidate.valveId === 5052)!;
     expect(top.breakdown.synergy ?? 0).toBe(0);
   });

@@ -92,13 +92,15 @@ describe("scanPool", () => {
     expect(res.pool).toEqual(live.map((i) => 1000 + i));
   });
 
-  it("同一局第二次扫描:被选走的技能从候选池消失,但名字和英雄还记得", async () => {
+  it("某格变空:卡上没这个技能时第一次不算(可能是说明框),连续两次才算被选走,名字和英雄还记得", async () => {
     const memory = new PoolMemory();
     await scanPool(frames(frameWithLiveCells(() => true)), deps(fakeClassifier(ALL), memory));
-    // 第 20 格被选走(变空)。
+    // 第 20 格变空。
     const live = ALL.filter((i) => i !== 20);
-    const res = await scanPool(
+    const scan = () => scanPool(
       frames(frameWithLiveCells((i) => i !== 20)), deps(fakeClassifier(live), memory));
+    expect((await scan()).pool).toContain(1020);
+    const res = await scan();
     expect(res.pool).not.toContain(1020);
     expect(res.pool.length).toBe(47);
     expect(res.snapshot.names[20]).toBe(nameOf(20));

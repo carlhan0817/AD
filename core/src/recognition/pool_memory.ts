@@ -32,6 +32,12 @@ export class PoolMemory {
   private taken = new Set<number>();
   private me: number | null = null;
   private myHero: number | null = null;
+  private seat: number | null = null;
+  private emptySeen: number[] = [];
+
+  /** 本局里我的选位(第一轮第几个选,1..10);轮到我时才算得出。 */
+  get mySeat(): number | null { return this.seat; }
+  rememberMySeat(seat: number | null): void { if (this.seat === null && seat !== null) this.seat = seat; }
 
   /** 本局里「我」坐的行(认出过一次就记住;座位一局里不会变)。 */
   get myRow(): number | null { return this.me; }
@@ -53,11 +59,15 @@ export class PoolMemory {
     this.taken = new Set();
     this.me = null;
     this.myHero = null;
+    this.seat = null;
+    this.emptySeen = [];
   }
 
   /** 并入一次扫描结果,返回当前这局的结论。 */
-  /** takenHeroes:本次扫描看到已变灰的英雄位置(可不给)。 */
-  observe(reading: PoolReading, takenHeroes: Iterable<number> = []): PoolSnapshot {
+  /** takenHeroes:本次扫描看到已变灰的英雄位置(可不给)。
+   *  onCard:这个技能是否出现在某张玩家卡上。说明框盖住的格子也会显得「空」,所以给了 onCard 时,
+   *  一格要么技能确实上了卡、要么连续两次扫描都是空的,才算被选走。 */
+  observe(reading: PoolReading, takenHeroes: Iterable<number> = [], onCard?: (name: string) => boolean): PoolSnapshot {
     const { cells, groups } = reading;
     let mismatch = 0, compared = 0;
     cells.forEach((c, i) => {
@@ -75,7 +85,12 @@ export class PoolMemory {
     for (const g of groups) {
       if ((this.heroes.get(g.hero) ?? null) === null) this.heroes.set(g.hero, g.heroId);
     }
-    cells.forEach((c, i) => { if (c.empty) this.gone[i] = true; });
+    cells.forEach((c, i) => {
+      if (!c.empty) { this.emptySeen[i] = 0; return; }
+      this.emptySeen[i] = (this.emptySeen[i] ?? 0) + 1;
+      const name = this.names[i] ?? null;
+      if (onCard === undefined || name === null || onCard(name) || this.emptySeen[i] >= 2) this.gone[i] = true;
+    });
     for (const h of takenHeroes) this.taken.add(h);
     return {
       names: [...this.names],

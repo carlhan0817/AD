@@ -112,9 +112,16 @@ describe.skipIf(!hasAssets)("运行时真帧:完整扫描流程(按时间顺序)
     }
   });
 
-  it("第几手 = 池里已变空的技能数 + 1;选了英雄后不再推荐英雄", () => {
+  it("第几手 = 已被选走的技能数 + 英雄数 + 1;选了英雄后不再推荐英雄", () => {
     expect(results.get("07-41-38")!.pickIndex).toBe(1);
-    expect(results.get("07-44-28")!.pickIndex).toBe(16);
+    expect(results.get("07-44-28")!.pickIndex).toBe(19);
+    // zigzag:坐第一个选的人依次是第 1、20、21、40、41 手(英雄也算一手)。轮到我时的三帧:
+    expect(results.get("07-44-45")!.pickIndex).toBe(21);
+    // 实际是第 40 手;这一帧旧版悬浮窗盖住了行 5 的卡,有 1 个技能当时没法在卡上确认,下一帧补上。
+    expect(results.get("07-47-05")!.pickIndex).toBe(39);
+    // 这一帧说明框盖住了几格,不能因此多算;此时我的第 41 手已选完,所以是第 42 手。
+    expect(results.get("07-47-13")!.pickIndex).toBe(42);
+    expect(results.get("07-47-13")!.seat).toBe(1);
     for (const k of ["07-44-40", "07-45-01", "07-47-05", "07-53-37"]) {
       expect([k, results.get(k)!.recommendations.some((x) => x.candidate.slotType === "hero")]).toEqual([k, false]);
     }
