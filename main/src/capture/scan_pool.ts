@@ -2,7 +2,7 @@
 // 手动扫一次(新识别层):一帧 → 判空 + 分类器认 48 格 → 按组定英雄、救回不确定格
 // → 并入本局记忆(已认出的不再改)→ 读玩家卡(我是谁、我已选了什么、我的英雄)
 // → 还在池里的技能 + 还能选的英雄 → 按「我」的上下文打分排名。
-// 取代 scan_once.ts 的 pHash 识别;同样有意绕过 runMonitorLoop 的 4 道门(手动是过渡形态)。
+// 有意绕过 runMonitorLoop 的 4 道门(手动是过渡形态,门控代码保留给以后的自动扫描)。
 // 见 docs/superpowers/plans/2026-10-03-recognition-rework.md。
 import { readPool } from "@ad/core/recognition/pool_classify";
 import { resolvePool, type PoolReading } from "@ad/core/recognition/pool_resolve";

@@ -33,10 +33,6 @@ const truth = (JSON.parse(readFileSync(
 
 // reference.db 是流水线产物(未入库):默认 pipeline/out/reference.db,或 AD_REFERENCE_DB。
 const DB = process.env.AD_REFERENCE_DB ?? join(ROOT, "pipeline", "out", "reference.db");
-interface HeroTruthCell { order: number; valveId: number | null; shortName: string | null; }
-const heroTruth = JSON.parse(readFileSync(
-  fileURLToPath(new URL("./fixtures/hero_ground_truth.json", import.meta.url)), "utf-8",
-)) as Record<string, { file: string; cells: HeroTruthCell[] }>;
 
 // pHash 索引也是流水线产物(未入库):默认 models/templates/phash_index.json,或 AD_PHASH_INDEX。
 const INDEX = process.env.AD_PHASH_INDEX ?? join(ROOT, "models", "templates", "phash_index.json");
@@ -102,31 +98,24 @@ describe.skipIf(!hasShots)("技能池识别 vs 标准答案(14 张真帧)", () =
   });
 
   describe.skipIf(!existsSync(DB))("按组定英雄(需要 reference.db)", () => {
-    // 旧的 hero_ground_truth.json(英雄格 pHash 自举出来的答案)与分组结果有 20/45 格不同。
-    // 2026-10-03 抽 8 格目视核对:8 格都是分组结果对、旧答案错。故这里不拿旧答案当判据,只统计差异。
     it("135 个完整的组全部认定英雄", () => {
       const ref = new ReferenceDb(DB);
       try {
         const lookup = buildAbilityLookup(ref);
         const ownerOf = (n: string) => lookup.get(n)?.heroId ?? null;
-        let complete = 0, differsFromOld = 0, comparedWithOld = 0;
+        let complete = 0;
         const rules: Record<string, number> = {};
         const undecided: string[] = [];
         for (const { frame, cells } of reads) {
-          const old = Object.values(heroTruth).find((h) => h.file === frame.file);
           for (const g of groupHeroes(cells, ownerOf)) {
             if (g.cells.some((c) => c.empty)) continue; // 只验满员组;残缺组靠 PoolMemory 记住的结果
             complete++;
             rules[g.rule] = (rules[g.rule] ?? 0) + 1;
-            if (g.heroId === null) { undecided.push(`${frame.file} hero${g.hero} ${g.rule}`); continue; }
-            const t = old?.cells.find((c) => c.order === g.hero);
-            if (t === undefined || t.valveId === null) continue;
-            comparedWithOld++;
-            if (-t.valveId !== g.heroId) differsFromOld++;
+            if (g.heroId === null) undecided.push(`${frame.file} hero${g.hero} ${g.rule}`);
           }
         }
         // eslint-disable-next-line no-console
-        console.log(`满员组 ${complete};规则分布 ${JSON.stringify(rules)};与旧英雄答案不同 ${differsFromOld}/${comparedWithOld}`);
+        console.log(`满员组 ${complete};规则分布 ${JSON.stringify(rules)}`);
         expect(complete).toBe(135);
         expect(undecided).toEqual([]);
       } finally { ref.close(); }
@@ -177,7 +166,7 @@ describe.skipIf(!hasShots)("技能池识别 vs 标准答案(14 张真帧)", () =
         const ownerOf = (n: string) => lookup.get(n)?.heroId ?? null;
         let pass = 0, total = 0;
         for (const { frame, cells, gray } of reads) {
-          if (!Object.values(heroTruth).some((h) => h.file === frame.file)) continue;
+          if (!frame.file.endsWith(".png")) continue; // 只取 4 张 2026-07-07 的 png
           const rect = { x: 0, y: 0, width: gray.width, height: gray.height };
           for (const g of groupHeroes(cells, ownerOf)) {
             if (g.heroId === null) continue;

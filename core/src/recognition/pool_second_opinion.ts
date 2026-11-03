@@ -11,7 +11,7 @@ import { poolCellRects, POOL_LAYOUT_RATIO, type ClientRect } from "./roi";
 import { POOL_CELLS_1080P } from "./pool_layout_1080p";
 import { POOL_SLOTS_1080P } from "./pool_slots";
 
-/** 与 loop.ts / scan_once.ts 的 RECOGNIZE_MAX_DISTANCE 同值(真机标定)。 */
+/** 与 loop.ts 的 RECOGNIZE_MAX_DISTANCE 同值(真机标定)。 */
 export const SECOND_OPINION_MAX_DISTANCE = 20;
 
 // POOL_SLOTS_1080P 的第 i 格 → POOL_CELLS_1080P 里中心最近的那格的下标。

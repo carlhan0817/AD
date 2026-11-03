@@ -13,6 +13,7 @@
 // v5(仅 10 jpg 综合)jpg 全48但运行时 pgm 掉到 43/48——【关键教训:必须含运行时来源(desktopCapturer)
 // 的帧,jpg 与实时抓帧亮度/对比度不同,pHash 不同】;v6 含两源后双稳。
 // ⚠️ 局限:实时来源样本仅 1 帧。后续多抓几张 desktopCapturer 真帧(不同局)加入 fixtures 重求解更稳。
+// 现在只给 pool_second_opinion.ts(pHash 第二意见)用;主识别用 pool_slots.ts。
 // 仅此 1920×1080 分辨率标定;其它分辨率本阶段不接。
 import type { Rect } from "./roi";
 
