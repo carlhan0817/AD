@@ -4,7 +4,7 @@ import type { ScoringConfig, Signal, SignalId } from "@ad/shared/types/scoring";
 import { base } from "./base";
 import { synergy } from "./synergy";
 import { makePosSignal } from "./pos";
-import { aghs, shard } from "./aghs";
+import { aghs, makeBoundSignal, shard } from "./aghs";
 
 /** 已知 SignalId 全集(用于 config 校验)。 */
 export const KNOWN_SIGNALS: SignalId[] = [
@@ -17,8 +17,8 @@ export function buildSignals(cfg: ScoringConfig): Partial<Record<SignalId, Signa
     base,
     synergy,
     pos: makePosSignal(cfg.sigma),
-    aghs,
-    shard,
+    aghs: cfg.aghsBinding ? makeBoundSignal("aghs", cfg.aghsBinding) : aghs,
+    shard: cfg.aghsBinding ? makeBoundSignal("shard", cfg.aghsBinding) : shard,
     // snipe / teammate_protect:实现后在此注册 + 给基础权重即可生效。
   };
 }

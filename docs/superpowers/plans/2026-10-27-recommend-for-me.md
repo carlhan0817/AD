@@ -49,7 +49,22 @@
 - `roundWeights.synergy`:第 1~5 轮搭配的权重,逐轮上升。
 - `seatBaseBonus`:选位修正(预留,默认 0)。第一个选的人单技能权重乘 (1+该值),第十个不变,中间线性。
 - `pairFallback`:搭配数据缺失时的估分比例。`single` 是单技能强度,`similar` 是同类技能和你已选技能的搭配。
-- `baseWeights` 里的 `aghs`、`shard`、`pos`(神杖、魔晶、选位稀缺)目前是 0,想启用就改成非 0。
+- `roundWeights.aghs` / `roundWeights.shard`:第 1~5 轮神杖、魔晶绑定的权重。
+- `aghsBinding`:神杖、魔晶绑定的参数,见下。
+- `baseWeights.pos`(选位稀缺)目前是 0,想启用就改成非 0。
+
+神杖、魔晶项的算法:
+
+```text
+S_aghs(c)  = max(0, scepterGain(c) − aghsBaseline)   # 技能没有神杖升级则为 0
+S_shard(c) = max(0, shardGain(c)  − shardBaseline)   # 技能没有魔晶升级则为 0
+N_aghs / N_shard = 已选的技能和英雄里,S ≥ bindMin 的个数
+
+神杖项 = W_aghs[r]  × S_aghs(c)  × (1 + aghsStackBonus  × min(N_aghs,  stackCap))
+魔晶项 = W_shard[r] × S_shard(c) × (1 + shardStackBonus × min(N_shard, stackCap))
+```
+
+要减基准,是因为几乎所有技能买了神杖胜率都更高(中位数 +7.4%,魔晶 +5.0%),这主要反映「买得起的局本来就优势」。
 
 搭配数据缺失时不再算 0:按用户的判断,强势组合总被别人拆开选走,所以样本少。这时改用单技能强度和同类技能估分。
 同类技能来自 `models/tags/ability_tags.json`(源自 ability-draft-plus,其中控制类标签源自 Liquipedia,CC-BY-SA 3.0)。

@@ -23,11 +23,13 @@ beforeAll(() => {
     CREATE TABLE ability_pairs (ability_id_one INTEGER, ability_id_two INTEGER,
       num_picks INTEGER, wins INTEGER, winrate REAL, PRIMARY KEY (ability_id_one, ability_id_two));
     CREATE TABLE ability_aghs (ability_id INTEGER PRIMARY KEY, scepter_gain REAL, shard_gain REAL);
+    CREATE TABLE abilities (valve_id INTEGER PRIMARY KEY, slot_type TEXT, has_scepter INTEGER, has_shard INTEGER);
   `);
   db.run("INSERT INTO ability_winrate VALUES (5051,'p',10,5,0.55,8.4,0.9)");
   db.run("INSERT INTO hero_winrate VALUES (9,'p',1,2,0.52)");
   db.run("INSERT INTO ability_pairs VALUES (-9,5051,10,6,0.57)");
   db.run("INSERT INTO ability_aghs VALUES (5051,0.078,0.047)");
+  db.run("INSERT INTO abilities VALUES (5051,'normal',1,0)");
   db.close();
   // buildScoringContext 现在收 Queryable,不再自开连接 —— 复用一个 ReferenceDb(与生产
   // 代码同款长连接)贯穿全部用例,顺带验证 ReferenceDb.all() 与 buildScoringContext 协作正常。
@@ -56,6 +58,11 @@ describe("buildScoringContext", () => {
     const ctx = buildScoringContext(ref, me, 5);
     expect(ctx.aghs.get(5051)?.scepterGain).toBeCloseTo(0.078, 6);
     expect(ctx.aghs.get(5051)?.shardGain).toBeCloseTo(0.047, 6);
+  });
+
+  it("loads the scepter/shard upgrade flags onto the aghs row", () => {
+    const row = buildScoringContext(ref, me, 5).aghs.get(5051)!;
+    expect([row.hasScepter, row.hasShard]).toEqual([true, false]);
   });
 
   it("carries me + pickIndex through", () => {

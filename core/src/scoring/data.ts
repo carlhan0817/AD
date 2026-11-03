@@ -42,5 +42,14 @@ export function buildScoringContext(
     aghs.set(r.ability_id, { scepterGain: r.scepter_gain, shardGain: r.shard_gain });
   }
 
+  for (const r of q.all(
+    "SELECT valve_id, has_scepter, has_shard FROM abilities WHERE slot_type IN ('normal','ultimate')",
+  ) as unknown as Array<{ valve_id: number; has_scepter: number | null; has_shard: number | null }>) {
+    const row = aghs.get(r.valve_id);
+    if (row === undefined) continue;
+    if (r.has_scepter !== null) row.hasScepter = !!r.has_scepter;
+    if (r.has_shard !== null) row.hasShard = !!r.has_shard;
+  }
+
   return { me, pickIndex, winrate, pairWinrate, aghs, ...extras };
 }

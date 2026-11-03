@@ -22,6 +22,7 @@ beforeAll(() => {
     CREATE TABLE hero_winrate (hero_id INTEGER PRIMARY KEY, patch TEXT, wins INTEGER, num_games INTEGER, winrate REAL);
     CREATE TABLE ability_pairs (ability_id_one INTEGER, ability_id_two INTEGER, num_picks INTEGER, wins INTEGER, winrate REAL, PRIMARY KEY (ability_id_one, ability_id_two));
     CREATE TABLE ability_aghs (ability_id INTEGER PRIMARY KEY, scepter_gain REAL, shard_gain REAL);
+    CREATE TABLE abilities (valve_id INTEGER PRIMARY KEY, slot_type TEXT, has_scepter INTEGER, has_shard INTEGER);
   `);
   // 6 个普通候选,胜率递减,确保 Top-K 截断可验
   for (let i = 0; i < 6; i++) {

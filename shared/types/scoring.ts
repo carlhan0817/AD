@@ -18,6 +18,9 @@ export interface WinrateRow {
 export interface AghsRow {
   scepterGain: number | null; // WR_aghs - WR_base
   shardGain: number | null;   // WR_shard - WR_base
+  /** 技能有没有神杖/魔晶升级;false 时增益只是「买得起的局本来就优势」,不算绑定。英雄没有这个标记。 */
+  hasScepter?: boolean;
+  hasShard?: boolean;
 }
 
 /** 打分上下文:本人状态 + 已查好的只读数据,注入给各 signal。signal 不碰 DB。 */
@@ -60,6 +63,17 @@ export interface PairFallback {
   similar: number;
 }
 
+/** 神杖/魔晶绑定的参数。几乎所有技能买了神杖胜率都更高(买得起的局本来就优势),所以要减基准。 */
+export interface AghsBinding {
+  aghsBaseline: number;
+  shardBaseline: number;
+  /** 超出基准多少算「绑定」,用来数已选件里有几个绑定的。 */
+  bindMin: number;
+  aghsStackBonus: number;
+  shardStackBonus: number;
+  stackCap: number;
+}
+
 /** 打分配置:基础权重 w⁰ + 动态调节系数。可由 JSON 加载(细则 §3「参数推荐配置」)。 */
 export interface ScoringConfig {
   /** 各维度基础权重 w_i⁰。缺省/0 = 关闭该维度。 */
@@ -75,7 +89,9 @@ export interface ScoringConfig {
   /** 最终返回的 Top-K(默认 4,即 3~4)。 */
   topK: number;
   /** 按轮次(1..5)的权重表:单技能/英雄逐轮递减,搭配逐轮上升。给了就取代 alpha/beta 的动态规则。 */
-  roundWeights?: { base: number[]; synergy: number[] };
+  roundWeights?: { base: number[]; synergy: number[]; aghs?: number[]; shard?: number[] };
+  /** 神杖/魔晶绑定:给了 aghsBinding 就按「超出基准的增益 × 叠加」算,否则用原始增益。 */
+  aghsBinding?: AghsBinding;
   /** 选位修正(预留,默认 0):第一个选时 base 权重乘 (1+该值),第十个选时不变,中间线性。 */
   seatBaseBonus?: number;
   /** 搭配数据缺失时的估分比例。 */

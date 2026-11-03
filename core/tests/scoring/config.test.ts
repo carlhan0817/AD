@@ -19,10 +19,11 @@ describe("signal registry", () => {
 });
 
 describe("scoring config", () => {
-  it("default config: round weights on, aghs/shard/pos off", () => {
+  it("default config: round weights and aghs binding on, pos off", () => {
     const cfg = defaultScoringConfig();
     expect(cfg.baseWeights).toEqual({ base: 1.0, synergy: 1.0, aghs: 0, shard: 0, pos: 0 });
-    expect(cfg.roundWeights!.base.length).toBe(5);
+    expect(cfg.roundWeights!.aghs!.length).toBe(5);
+    expect(cfg.aghsBinding!.aghsBaseline).toBe(0.074);
     expect(cfg.alpha).toBe(0.5);
     expect(cfg.beta).toBe(0.4);
     expect(cfg.sigma).toBe(10);

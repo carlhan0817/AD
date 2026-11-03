@@ -66,7 +66,6 @@ describe("按轮次的权重", () => {
   });
   it("默认关闭的维度不出现", () => {
     expect(resolveWeights(cfg, 5).pos).toBeUndefined();
-    expect(resolveWeights(cfg, 5).aghs).toBeUndefined();
   });
   it("选位修正(预留):第一个选加满,第十个不加,默认 0 不影响", () => {
     const c2 = { ...cfg, seatBaseBonus: 0.5 };
