@@ -15,6 +15,9 @@ describe("isHeroTileTaken", () => {
   it("灰暗、低对比(被选走的样子)→ 已选走", () => {
     expect(isHeroTileTaken(tile([20, 20, 20], [60, 60, 60]))).toBe(true);
   });
+  it("灰、对比 30(被选走的 Hoodwink)→ 已选走", () => {
+    expect(isHeroTileTaken(tile([50, 50, 50], [110, 110, 110]))).toBe(true);
+  });
   it("灰但对比强 → 不算(宁可漏判)", () => {
     expect(isHeroTileTaken(tile([10, 10, 10], [200, 200, 200]))).toBe(false);
   });

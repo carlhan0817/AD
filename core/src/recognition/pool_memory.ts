@@ -3,7 +3,8 @@
 //   - 补上之前没认出来的格;
 //   - 看哪些格变空了(= 被选走了)。
 // 已经认出来的格不再改——选到一半画面变暗、有遮挡,都不会把结果弄乱。
-// 被选走也是单向的:一格一旦变空就一直算空,英雄模型一旦变灰就一直算被选走。
+// 被选走也是单向的:一格一旦变空就一直算空,英雄模型一旦变灰就一直算被选走
+// (例外:英雄格后来明显是彩色,说明之前判错了,撤销)。
 // 这样鼠标悬停弹出的说明框盖住已选走的格时,不会把它「复活」(2026-10-27 真机遇到过)。
 import type { PoolReading } from "./pool_resolve";
 
@@ -66,8 +67,12 @@ export class PoolMemory {
   /** 并入一次扫描结果,返回当前这局的结论。 */
   /** takenHeroes:本次扫描看到已变灰的英雄位置(可不给)。
    *  onCard:这个技能是否出现在某张玩家卡上。说明框盖住的格子也会显得「空」,所以给了 onCard 时,
-   *  一格要么技能确实上了卡、要么连续两次扫描都是空的,才算被选走。 */
-  observe(reading: PoolReading, takenHeroes: Iterable<number> = [], onCard?: (name: string) => boolean): PoolSnapshot {
+   *  一格要么技能确实上了卡、要么连续两次扫描都是空的,才算被选走。
+   *  coloredHeroes:本次扫描明显是彩色的英雄位置,撤销之前对它们的「已选走」误判。 */
+  observe(
+    reading: PoolReading, takenHeroes: Iterable<number> = [], onCard?: (name: string) => boolean,
+    coloredHeroes: Iterable<number> = [],
+  ): PoolSnapshot {
     const { cells, groups } = reading;
     let mismatch = 0, compared = 0;
     cells.forEach((c, i) => {
@@ -92,6 +97,7 @@ export class PoolMemory {
       if (onCard === undefined || name === null || onCard(name) || this.emptySeen[i] >= 2) this.gone[i] = true;
     });
     for (const h of takenHeroes) this.taken.add(h);
+    for (const h of coloredHeroes) this.taken.delete(h);
     return {
       names: [...this.names],
       available: cells.map((_c, i) => !this.gone[i]),

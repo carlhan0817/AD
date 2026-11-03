@@ -176,9 +176,21 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
         const t1 = Date.now();
         const deps: PoolScanDeps = { clf, lookup, ref, cfg: readCfg(), rect, memory, index, heroPortraits, similar };
         const res = await scanPool(frames, deps);
+        const tileText = res.heroTileStats.map((t) => `${t.pos}:${t.chroma.toFixed(0)}/${t.std.toFixed(0)}`).join(" ");
+        if (!res.onDraftScreen) {
+          diag(`[scan] 这一帧不是选人界面,已跳过,没有写入记忆(英雄格 饱和度/对比度 ${tileText})`);
+          void saveScanFrame(frames.rgb, version + 1);
+          const skipped: OverlaySnapshot = {
+            state: { activeRow: 0, players: [] }, recommendations: [], highlights: [],
+            remaining: { hero: 1, normal: 3, ultimate: 1 }, note: "不在选人界面,这次没有扫描", version: ++version,
+          };
+          if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, skipped);
+          return;
+        }
         diag(`[scan] 帧 ${frames.rgb.width}x${frames.rgb.height} 截图(${streamed ? "画面流" : "普通"}) ${t1 - t0}ms 识别 ${Date.now() - t1}ms | ` +
           `池内技能 ${res.pool.length} 可选英雄 ${res.heroes.length}/12(已选走位置 ${res.takenHeroes.join(",") || "无"}) 没认出 ${res.unknownCells} 格` +
           `${res.snapshot.reset ? " (新的一局)" : ""} | 推荐 ${res.recommendations.map((r) => nameOf.get(r.candidate.valveId) ?? r.candidate.valveId).join(", ")}`);
+        diag(`[scan]   英雄格 饱和度/对比度 ${tileText}`);
         // 每条推荐的各项得分,调权重时看。
         for (const r of res.recommendations) {
           const parts = Object.entries(r.breakdown).filter(([, v]) => v !== 0).map(([k, v]) => `${k} ${(v as number).toFixed(4)}`);

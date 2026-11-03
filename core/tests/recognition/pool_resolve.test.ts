@@ -178,4 +178,11 @@ describe("PoolMemory — 满池认一次并记住", () => {
     m.reset();
     expect([m.myRow, m.myHeroId]).toEqual([null, null]);
   });
+
+  it("英雄误判能撤销:后来明显是彩色,就不再算被选走", () => {
+    const m = new PoolMemory();
+    m.observe(full(), [3, 5]);
+    const s = m.observe(full(), [5], undefined, [3]);
+    expect([...s.takenHeroes]).toEqual([5]);
+  });
 });

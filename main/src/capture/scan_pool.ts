@@ -8,7 +8,7 @@ import { readPool } from "@ad/core/recognition/pool_classify";
 import { resolvePool, type PoolReading } from "@ad/core/recognition/pool_resolve";
 import { phashSecondOpinion } from "@ad/core/recognition/pool_second_opinion";
 import { verifyHeroCandidate } from "@ad/core/recognition/hero_recognize";
-import { takenHeroPositions } from "@ad/core/recognition/hero_taken";
+import { readHeroTiles, type HeroTiles } from "@ad/core/recognition/hero_taken";
 import { findActiveRow, findMyRow, readCardPicks, type CardPicks } from "@ad/core/recognition/card_reading";
 import { identifyPortrait } from "@ad/core/recognition/hero_portrait";
 import { playerCards } from "@ad/core/recognition/player_cards";
@@ -25,6 +25,16 @@ import type { Candidate, ScoredCandidate, ScoringConfig } from "@ad/shared/types
 import type { PlayerState } from "@ad/shared/types/draft";
 import type { Highlight } from "@ad/shared/types/ipc";
 import type { WindowRect } from "../ffi/geometry";
+
+// 选人界面判定:主菜单、加载画面这类帧绝不能进本局记忆(真机:一张主菜单帧留下 20 个假空格,
+// 还把真实技能的名字占住了)。三条都满足才算选人界面:
+//   - 有图标的格里,至少一半认得出。50 帧实测:选人界面最低 0.77(说明框盖住几格),主菜单 0.07;
+//   - 空格数和卡上已选技能数差得不多。选人界面上两者相等或只差说明框盖住的几格(这条是兜底,
+//     主菜单的差距只有 6,挡不住它);
+//   - 找得到我的绿色外框,或者这局已经认出过我(主菜单找不到)。
+// 选到最后池子只剩几格时,说明框可能把识别率压到一半以下,这一帧会被跳过;再扫一次就好,不会写坏记忆。
+const DRAFT_MIN_READ_SHARE = 0.5;
+const DRAFT_MAX_EMPTY_CARD_GAP = 8;
 
 // 10 人 × 5 轮 = 50 手,zigzag 顺序,英雄也算一手(真机:坐第一个选的人依次是第 1、20、21、40、41 手)。
 const TOTAL_PICKS = 50;
@@ -49,6 +59,10 @@ export interface PoolScanDeps {
 }
 
 export interface PoolScanResult {
+  /** 这一帧是不是选人界面;不是的话什么都没写进记忆,其余字段都是空的。 */
+  onDraftScreen: boolean;
+  /** 每个英雄格的饱和度/标准差(日志用)。 */
+  heroTileStats: HeroTiles["stats"];
   snapshot: PoolSnapshot;
   /** 本次扫描的 48 格读数与 12 组定英雄结果(未并入记忆前),供日志核对。 */
   cells: PoolReading["cells"];
@@ -82,6 +96,24 @@ export async function scanPool(
   frames: { rgb: RgbFrame; gray: GrayFrame }, deps: PoolScanDeps,
 ): Promise<PoolScanResult> {
   const cells = await readPool(frames.rgb, deps.rect, deps.clf);
+  const cards = await readCardPicks(frames.rgb, deps.rect, deps.clf);
+  const tiles = readHeroTiles(frames.rgb, deps.rect);
+  const live = cells.filter((c) => !c.empty);
+  const read = live.filter((c) => c.name !== null).length;
+  const onCard = cards.reduce((n, c) => n + c.normals.length + (c.ultimate === null ? 0 : 1) + c.unknown, 0);
+  const seenMe = findMyRow(frames.rgb, deps.rect);
+  const onDraftScreen = live.length > 0 && read / live.length >= DRAFT_MIN_READ_SHARE
+    && Math.abs(cells.length - live.length - onCard) <= DRAFT_MAX_EMPTY_CARD_GAP
+    && (seenMe !== null || deps.memory.myRow !== null);
+  if (!onDraftScreen) {
+    return {
+      onDraftScreen, heroTileStats: tiles.stats,
+      snapshot: { names: [], available: [], heroes: new Map(), takenHeroes: new Set(), reset: false },
+      cells: [], groups: [], pool: [], heroes: [], takenHeroes: [], unknownCells: 0,
+      myRow: deps.memory.myRow, activeRow: null, me: { row: deps.memory.myRow ?? 0, hero: null, normals: [], ultimates: [] },
+      myPicks: null, highlights: [], pickIndex: 1, seat: deps.memory.mySeat, recommendations: [],
+    };
+  }
   const index = deps.index;
   const reading = resolvePool(cells, {
     ownerOf: (name) => deps.lookup.get(name)?.heroId ?? null,
@@ -94,10 +126,9 @@ export async function scanPool(
       return index ? verifyHeroCandidate(frames.gray, deps.rect, heroPos, -heroId, index) : false;
     },
   });
-  // 先读全部玩家卡:卡上有的技能才算确实被选走(说明框盖住的格子也会显得空)。
-  const cards = await readCardPicks(frames.rgb, deps.rect, deps.clf);
+  // 卡上有的技能才算确实被选走(说明框盖住的格子也会显得空)。
   const onCards = new Set(cards.flatMap((c) => [...c.normals, ...(c.ultimate ? [c.ultimate] : [])]));
-  const snapshot = deps.memory.observe(reading, takenHeroPositions(frames.rgb, deps.rect), (n) => onCards.has(n));
+  const snapshot = deps.memory.observe(reading, tiles.taken, (n) => onCards.has(n), tiles.colored);
 
   const pool: number[] = [];
   const candidates: Candidate[] = [];
@@ -121,7 +152,7 @@ export async function scanPool(
   const unknownCells = snapshot.names.filter((n, i) => n === null && snapshot.available[i]).length;
 
   // 「我」:坐哪一行(白色标题),卡上已选了什么,选了哪个英雄。一局里认出过就记住。
-  deps.memory.rememberMyRow(findMyRow(frames.rgb, deps.rect));
+  deps.memory.rememberMyRow(seenMe);
   const myRow = deps.memory.myRow;
   const activeRow = findActiveRow(frames.rgb, deps.rect);
   let myPicks: CardPicks | null = null;
@@ -180,7 +211,7 @@ export async function scanPool(
     },
   );
   return {
-    highlights, snapshot, cells: reading.cells, groups: reading.groups, pool, heroes,
+    onDraftScreen, heroTileStats: tiles.stats, highlights, snapshot, cells: reading.cells, groups: reading.groups, pool, heroes,
     takenHeroes: [...takenHeroes].sort((a, b) => a - b), unknownCells,
     myRow, activeRow, me, myPicks, pickIndex, seat, recommendations,
   };

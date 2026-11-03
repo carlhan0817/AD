@@ -4,6 +4,7 @@ import { scanPool, type PoolScanDeps } from "../../src/capture/scan_pool";
 import { PoolMemory } from "@ad/core/recognition/pool_memory";
 import { POOL_SLOTS_1080P } from "@ad/core/recognition/pool_slots";
 import { heroCellRects } from "@ad/core/recognition/hero_layout";
+import { playerCards } from "@ad/core/recognition/player_cards";
 import { rgbFrameToGray, type RgbFrame } from "@ad/core/recognition/rgb";
 import type { Classifier, Prediction } from "@ad/core/recognition/classifier";
 import type { AbilityInfo } from "@ad/core/db/ability_lookup";
@@ -14,8 +15,13 @@ const RECT = { x: 0, y: 0, width: 1920, height: 1080 };
 
 /** 黑底帧;在指定的格子里画上高对比的棋盘格(= 有图标),其余格保持纯黑(= 空格)。
  *  12 个英雄模型格画成彩色(= 还没被选走),takenHeroes 里的位置画成灰暗(= 已被选走)。 */
-function frameWithLiveCells(live: (i: number) => boolean, takenHeroes: number[] = []): RgbFrame {
+function frameWithLiveCells(live: (i: number) => boolean, takenHeroes: number[] = [], outline = true): RgbFrame {
   const data = new Uint8Array(1920 * 1080 * 3);
+  // 我的绿色外框(左1 的左边缘):选人界面判定要用。
+  if (outline) {
+    const c = playerCards(RECT)[0];
+    for (let y = c.y + 10; y < c.y + 136; y++) for (let x = c.x; x < c.x + 4; x++) data.set([86, 253, 0], (y * 1920 + x) * 3);
+  }
   for (const c of heroCellRects(RECT)) {
     const grey = takenHeroes.includes(c.order);
     for (let y = c.y - 2; y < c.y + c.h + 2; y++) for (let x = c.x - 2; x < c.x + c.w + 2; x++) {
@@ -86,9 +92,9 @@ describe("scanPool", () => {
   });
 
   it("空格不送分类器,也不进候选池", async () => {
-    const live = ALL.filter((i) => i % 2 === 0);
+    const live = ALL.filter((i) => i % 8 !== 0);
     const res = await scanPool(
-      frames(frameWithLiveCells((i) => i % 2 === 0)), deps(fakeClassifier(live)));
+      frames(frameWithLiveCells((i) => i % 8 !== 0)), deps(fakeClassifier(live)));
     expect(res.pool).toEqual(live.map((i) => 1000 + i));
   });
 
@@ -125,10 +131,25 @@ describe("scanPool", () => {
     expect(res.recommendations.map((r) => r.candidate.valveId)).not.toContain(-(100 + 7));
   });
 
-  it("所有格把握都不够:没有已采信的格可供分组,救不回,候选池为空", async () => {
-    const res = await scanPool(frames(frameWithLiveCells(() => true)), deps(fakeClassifier(ALL, 0.5)));
-    expect(res.pool).toEqual([]);
-    expect(res.unknownCells).toBe(48);
+  it("大部分格认不出 → 不是选人界面:什么都不记,不推荐", async () => {
+    const memory = new PoolMemory();
+    const res = await scanPool(frames(frameWithLiveCells(() => true)), deps(fakeClassifier(ALL, 0.5), memory));
+    expect(res.onDraftScreen).toBe(false);
     expect(res.recommendations).toEqual([]);
+    expect(memory.myRow).toBeNull();
+  });
+
+  it("空格很多但卡上没有技能(主菜单那种)→ 不是选人界面", async () => {
+    const live = ALL.filter((i) => i % 2 === 0);
+    const res = await scanPool(frames(frameWithLiveCells((i) => i % 2 === 0)), deps(fakeClassifier(live)));
+    expect(res.onDraftScreen).toBe(false);
+  });
+
+  it("找不到我的绿框,这局也没认出过我 → 不是选人界面;认出过就放行", async () => {
+    const memory = new PoolMemory();
+    const off = frames(frameWithLiveCells(() => true, [], false));
+    expect((await scanPool(off, deps(fakeClassifier(ALL), memory))).onDraftScreen).toBe(false);
+    await scanPool(frames(frameWithLiveCells(() => true)), deps(fakeClassifier(ALL), memory));
+    expect((await scanPool(off, deps(fakeClassifier(ALL), memory))).onDraftScreen).toBe(true);
   });
 });

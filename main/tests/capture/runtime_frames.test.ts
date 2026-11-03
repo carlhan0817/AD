@@ -44,6 +44,9 @@ const EXPECT: Record<string, { taken: number[]; active: number | null; myPicks?:
   "07-47-05": { taken: [0, 1, 2, 3, 5, 6, 7, 8, 11], active: 0, myHero: "naga_siren" },
   "07-52-45": { taken: [], active: null, myPicks: [], myHero: null },
   "07-53-37": { taken: [3], active: 0, myHero: "morphling" },
+  // 2026-11-03 坐左2(第 3 个选):01-10-52 是主菜单帧,不能进记忆。
+  "01-12-31": { taken: [], active: 1, me: 1 },
+  "01-15-48": { taken: [0, 1, 3, 4, 9, 10, 11], active: 4, me: 1 },
   // 2026-11-03 坐右1:选了 3 个普通技能,没选大招和英雄(Feast 落在坐标表标成「终极」的格里)。
   "00-51-39": { taken: [1, 3, 5, 8], active: 5, myHero: null, me: 5 },
   // 2026-10-28 两局自定义:第一局坐左1,第二局坐右4(行 8)。
@@ -150,6 +153,24 @@ describe.skipIf(!hasAssets)("运行时真帧:完整扫描流程(按时间顺序)
     expect(types.has("normal")).toBe(false);
     expect(types.has("ultimate")).toBe(true);
     expect(types.has("hero")).toBe(true);
+  });
+
+  it("主菜单帧不进记忆:这局的手数、选位、大招、英雄都不受影响", () => {
+    expect(results.get("01-10-52")!.onDraftScreen).toBe(false);
+    expect(results.get("01-12-31")!.pickIndex).toBe(3);
+    expect(results.get("01-14-21")!.pickIndex).toBe(18);
+    expect(results.get("01-15-03")!.pickIndex).toBe(23);
+    expect(results.get("01-15-03")!.seat).toBe(3);
+    const end = results.get("01-17-38")!;
+    expect(end.me.ultimates.length).toBe(1);
+    expect(pictureOf.get(-end.me.hero!)).toBe("queenofpain");
+    expect(end.takenHeroes.length).toBe(10);
+  });
+
+  it("被选走的 Hoodwink 不再推荐", () => {
+    const r = results.get("01-15-48")!;
+    expect(r.takenHeroes).toContain(4);
+    expect(r.heroes.map((h) => pictureOf.get(-h))).not.toContain("hoodwink");
   });
 
   it("第几手 = 已被选走的技能数 + 英雄数 + 1;选了英雄后不再推荐英雄", () => {
