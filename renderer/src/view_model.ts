@@ -1,6 +1,6 @@
 // renderer/src/view_model.ts
 // 把 OverlaySnapshot 映射为可渲染视图模型(纯函数,可测)。JSX 本身靠手动冒烟。
-import type { OverlaySnapshot } from "@ad/shared/types/ipc";
+import type { Highlight, OverlaySnapshot } from "@ad/shared/types/ipc";
 import type { SignalId } from "@ad/shared/types/scoring";
 
 export interface RecRow {
@@ -15,6 +15,7 @@ export interface RecRow {
 export interface OverlayViewModel {
   rows: RecRow[];
   note: string | null;
+  highlights: Highlight[];
   remaining: { hero: number; normal: number; ultimate: number };
 }
 
@@ -31,6 +32,7 @@ export function toViewModel(snap: OverlaySnapshot): OverlayViewModel {
   return {
     remaining: snap.remaining,
     note: snap.note ?? null,
+    highlights: snap.highlights ?? [],
     rows: snap.recommendations.map((r, i) => ({
       valveId: r.candidate.valveId,
       label: snap.labels?.[r.candidate.valveId] ?? String(r.candidate.valveId),

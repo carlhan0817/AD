@@ -215,6 +215,7 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
           recommendations: res.recommendations,
           remaining: remainingQuota(res.myRow === null ? players[0] : res.me),
           labels,
+          highlights: res.highlights,
           note,
           version: ++version,
         };

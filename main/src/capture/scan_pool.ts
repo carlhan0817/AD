@@ -12,6 +12,7 @@ import { takenHeroPositions } from "@ad/core/recognition/hero_taken";
 import { findActiveRow, findMyRow, readCardPicks, type CardPicks } from "@ad/core/recognition/card_reading";
 import { identifyPortrait } from "@ad/core/recognition/hero_portrait";
 import { playerCards } from "@ad/core/recognition/player_cards";
+import { highlightsFor } from "@ad/core/recognition/highlight";
 import { recommend } from "@ad/core/scoring/recommend";
 import type { PoolMemory, PoolSnapshot } from "@ad/core/recognition/pool_memory";
 import type { Classifier } from "@ad/core/recognition/classifier";
@@ -22,6 +23,7 @@ import type { AbilityInfo } from "@ad/core/db/ability_lookup";
 import type { Queryable } from "@ad/shared/types/db";
 import type { Candidate, ScoredCandidate, ScoringConfig } from "@ad/shared/types/scoring";
 import type { PlayerState } from "@ad/shared/types/draft";
+import type { Highlight } from "@ad/shared/types/ipc";
 import type { WindowRect } from "../ffi/geometry";
 
 // 10 人 × 5 轮 = 50 手,zigzag 顺序,英雄也算一手(真机:坐第一个选的人依次是第 1、20、21、40、41 手)。
@@ -67,6 +69,8 @@ export interface PoolScanResult {
   me: PlayerState;
   /** 我卡上读到的技能名(给日志看)。 */
   myPicks: CardPicks | null;
+  /** 推荐在技能池上对应的格子。 */
+  highlights: Highlight[];
   /** 第几手(1..50,英雄也算)。 */
   pickIndex: number;
   /** 我的选位(第一轮第几个选,1..10);还没轮到过我时不知道,为 null。 */
@@ -163,8 +167,19 @@ export async function scanPool(
   const abilityCount = Math.max(1, deps.cfg.topK - bestHero.length);
   const abilityRecs = recommend(candidates.filter((c) => c.slotType !== "hero"), me, pi, deps.ref, { ...deps.cfg, topK: abilityCount }, extras);
   const recommendations = [...abilityRecs, ...bestHero];
+  const highlights = highlightsFor(
+    recommendations.map((r) => r.candidate.valveId), deps.rect,
+    (id) => {
+      const i = snapshot.names.findIndex((n, k) => snapshot.available[k] && n !== null && deps.lookup.get(n)?.valveId === id);
+      return i < 0 ? null : i;
+    },
+    (id) => {
+      for (const [pos, heroId] of snapshot.heroes) if (heroId === -id) return pos;
+      return null;
+    },
+  );
   return {
-    snapshot, cells: reading.cells, groups: reading.groups, pool, heroes,
+    highlights, snapshot, cells: reading.cells, groups: reading.groups, pool, heroes,
     takenHeroes: [...takenHeroes].sort((a, b) => a - b), unknownCells,
     myRow, activeRow, me, myPicks, pickIndex, seat, recommendations,
   };

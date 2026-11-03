@@ -22,6 +22,13 @@ const row: CSSProperties = { display: "flex", justifyContent: "space-between", g
 const top: CSSProperties = { ...row, color: "#ffd250", fontWeight: 700 };
 const name: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis" };
 
+// 技能池上的高亮框:第一推荐金色,其余青色。位置和粗细都按视口比例算,线宽约等于 1080p 下 3px
+// (必须和 core/recognition/highlight.ts 的 HIGHLIGHT_THICKNESS 一致,框才不会压到识别区域)。
+const boxBase: CSSProperties = {
+  position: "fixed", boxSizing: "border-box", pointerEvents: "none", borderRadius: 4, borderStyle: "solid", borderWidth: "0.156vw",
+};
+const boxColor = (rank: number) => (rank === 0 ? "#ffd250" : "#4fd8ff");
+
 const SLOT_TEXT: Record<string, string> = { hero: "英雄", normal: "普通", ultimate: "大招" };
 
 export function Overlay() {
@@ -38,7 +45,17 @@ export function Overlay() {
   }
   const vm = toViewModel(snapshot);
   return (
-    <div style={panel}>
+    <>
+      {vm.highlights.map((h) => (
+        <div
+          key={`${h.rank}`}
+          style={{
+            ...boxBase, borderColor: boxColor(h.rank),
+            left: `${h.left * 100}vw`, top: `${h.top * 100}vh`, width: `${h.width * 100}vw`, height: `${h.height * 100}vh`,
+          }}
+        />
+      ))}
+      <div style={panel}>
       <div style={header}>
         <span style={title}>推荐 · Ctrl+Shift+S 刷新</span>
         <span style={muted}>剩余 英雄{vm.remaining.hero} 普通{vm.remaining.normal} 大招{vm.remaining.ultimate}</span>
@@ -53,6 +70,7 @@ export function Overlay() {
           </div>
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

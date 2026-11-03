@@ -16,6 +16,12 @@ import { portraitVariants } from "@ad/core/recognition/hero_portrait";
 import { buildAbilityLookup } from "@ad/core/db/ability_lookup";
 import { ReferenceDb } from "@ad/core/db/reference";
 import { rgbFrameToGray, type RgbFrame } from "@ad/core/recognition/rgb";
+import { readPool } from "@ad/core/recognition/pool_classify";
+import { findActiveRow, findMyRow, readCardPicks } from "@ad/core/recognition/card_reading";
+import { takenHeroPositions } from "@ad/core/recognition/hero_taken";
+import { highlightOuter, HIGHLIGHT_THICKNESS } from "@ad/core/recognition/highlight";
+import { heroCellRects } from "@ad/core/recognition/hero_layout";
+import { poolSlots } from "@ad/core/recognition/pool_slots";
 import { defaultScoringConfig } from "@ad/core/scoring/config";
 
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
@@ -82,6 +88,29 @@ describe.skipIf(!hasAssets)("运行时真帧:完整扫描流程(按时间顺序)
       }
     } finally { ref.close(); }
   }, 300_000);
+
+  it("把高亮框画满每一格(最坏情况),识别结果一格都不变", async () => {
+    const clf = await loadClassifier(MODEL, NAMES);
+    const rect = { x: 0, y: 0, width: 1920, height: 1080 };
+    for (const k of ["07-41-38", "07-45-01", "07-47-05"]) {
+      const clean = await load(join(FRAMES, readdirSync(FRAMES).find((f) => f.includes(`T${k}`))!));
+      const boxed: RgbFrame = { ...clean, data: clean.data.slice() };
+      for (const c of [...poolSlots(rect), ...heroCellRects(rect)]) {
+        const o = highlightOuter(c, rect), t = HIGHLIGHT_THICKNESS;
+        for (let y = o.y; y < o.y + o.h; y++) for (let x = o.x; x < o.x + o.w; x++) {
+          const edge = x < o.x + t || x >= o.x + o.w - t || y < o.y + t || y >= o.y + o.h - t;
+          if (edge) boxed.data.set([255, 210, 80], (y * 1920 + x) * 3);
+        }
+      }
+      const pick = async (f: RgbFrame) => ({
+        pool: (await readPool(f, rect, clf)).map((c) => [c.empty, c.guess]),
+        cards: await readCardPicks(f, rect, clf),
+        taken: [...takenHeroPositions(f, rect)],
+        me: findMyRow(f, rect), active: findActiveRow(f, rect),
+      });
+      expect(await pick(boxed)).toEqual(await pick(clean));
+    }
+  }, 120_000);
 
   it("已被选走的英雄位置与画面一致,且不进推荐", () => {
     for (const [k, e] of Object.entries(EXPECT)) {

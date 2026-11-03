@@ -3,6 +3,13 @@
 import type { DraftState } from "./draft";
 import type { ScoredCandidate } from "./scoring";
 
+/** 标在技能池上的高亮框,坐标是占游戏客户区的比例(0..1)。 */
+export interface Highlight {
+  left: number; top: number; width: number; height: number;
+  /** 0 = 第一推荐。 */
+  rank: number;
+}
+
 export interface OverlaySnapshot {
   /** 当前完整草稿状态。 */
   state: DraftState;
@@ -12,6 +19,8 @@ export interface OverlaySnapshot {
   remaining: { hero: number; normal: number; ultimate: number };
   /** valveId → 显示名(技能/英雄的英文名)。可不给,不给时 UI 显示 valveId。 */
   labels?: Record<number, string>;
+  /** 推荐在技能池上对应的格子;可不给。 */
+  highlights?: Highlight[];
   /** 一行状态说明(你坐哪、第几手、是否轮到你),可不给。 */
   note?: string;
   /** 单调递增版本号,renderer 用于丢弃过期帧。 */
