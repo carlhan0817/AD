@@ -107,12 +107,13 @@ describe("scanPool", () => {
     expect(res.heroes.length).toBe(12);
   });
 
-  it("技能与英雄分开排:技能取前 topK−1 个,英雄单独 1 个排最后", async () => {
+  it("技能与英雄分开取:技能 topK−1 个 + 英雄 1 个,合起来按分数排", async () => {
     const res = await scanPool(frames(frameWithLiveCells(() => true)), deps(fakeClassifier(ALL)));
     const types = res.recommendations.map((r) => r.candidate.slotType);
     expect(types.length).toBe(cfg.topK);
-    expect(types.slice(0, -1).every((t) => t !== "hero")).toBe(true);
-    expect(types[types.length - 1]).toBe("hero");
+    expect(types.filter((t) => t === "hero").length).toBe(1);
+    const scores = res.recommendations.map((r) => r.score);
+    for (let i = 1; i < scores.length; i++) expect(scores[i]).toBeLessThanOrEqual(scores[i - 1]);
   });
 
   it("已被选走(变灰)的英雄模型不再推荐,也不算可选英雄", async () => {

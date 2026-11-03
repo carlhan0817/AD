@@ -13,6 +13,11 @@ export function defaultScoringConfig(): ScoringConfig {
       base: [1.0, 0.8, 0.6, 0.4, 0.2], synergy: [0.2, 0.4, 0.6, 0.8, 1.0],
       aghs: [0.3, 0.35, 0.4, 0.45, 0.5], shard: [0.2, 0.225, 0.25, 0.275, 0.3],
     },
+    categoryNeed: {
+      hero: [0, 0, 0.01, 0.02, 0.04],
+      ultimate: [0, 0, 0.01, 0.02, 0.04],
+      normal: [0, 0, 0, 0, 0],
+    },
     aghsBinding: {
       aghsBaseline: 0.074, shardBaseline: 0.05, bindMin: 0.02,
       aghsStackBonus: 0.5, shardStackBonus: 0.5, stackCap: 2,
@@ -41,6 +46,7 @@ export function loadScoringConfig(json: string): ScoringConfig {
     topK: parsed.topK ?? d.topK,
     roundWeights: { ...d.roundWeights!, ...parsed.roundWeights },
     aghsBinding: { ...d.aghsBinding!, ...parsed.aghsBinding },
+    categoryNeed: { ...d.categoryNeed!, ...parsed.categoryNeed },
     seatBaseBonus: parsed.seatBaseBonus ?? d.seatBaseBonus,
     pairFallback: parsed.pairFallback ?? d.pairFallback,
   };

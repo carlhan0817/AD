@@ -50,6 +50,7 @@ export type SignalId =
   | "pos"      // tanh 选取位置稀缺度
   | "aghs"     // 神杖增益
   | "shard"    // 魔晶增益
+  | "need"     // 分类需求:还没选的类型(英雄/大招)逐轮加分
   // 扩展位(后续按同一注册表模式接入,不改 score()):
   | "snipe"
   | "teammate_protect";
@@ -90,6 +91,8 @@ export interface ScoringConfig {
   topK: number;
   /** 按轮次(1..5)的权重表:单技能/英雄逐轮递减,搭配逐轮上升。给了就取代 alpha/beta 的动态规则。 */
   roundWeights?: { base: number[]; synergy: number[]; aghs?: number[]; shard?: number[] };
+  /** 分类需求:某类型还有配额时,第 1~5 轮加的分。配额满的类型在硬过滤里已剔除。 */
+  categoryNeed?: Record<SlotType, number[]>;
   /** 神杖/魔晶绑定:给了 aghsBinding 就按「超出基准的增益 × 叠加」算,否则用原始增益。 */
   aghsBinding?: AghsBinding;
   /** 选位修正(预留,默认 0):第一个选时 base 权重乘 (1+该值),第十个选时不变,中间线性。 */

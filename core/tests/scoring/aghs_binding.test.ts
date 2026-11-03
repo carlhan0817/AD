@@ -69,3 +69,20 @@ describe("接入总分", () => {
     expect(cfg.roundWeights!.base[0]).toBe(1.0);
   });
 });
+
+describe("分类需求", () => {
+  const cfg = defaultScoringConfig();
+  const need = (type: "hero" | "ultimate" | "normal", pick: number) =>
+    scoreCandidates([{ valveId: -5, slotType: type }], { ...ctx([]), pickIndex: pick }, cfg)[0].breakdown.need ?? 0;
+  it("还没选的英雄/大招随轮次加分,普通技能不加", () => {
+    expect(need("hero", 5)).toBe(0);
+    expect(need("hero", 25)).toBe(0.01);
+    expect(need("ultimate", 45)).toBe(0.04);
+    expect(need("normal", 45)).toBe(0);
+  });
+  it("配置文件能改,缺的类型用默认", () => {
+    const c2 = loadScoringConfig('{"categoryNeed":{"hero":[1,1,1,1,1]}}');
+    expect(c2.categoryNeed!.hero[0]).toBe(1);
+    expect(c2.categoryNeed!.ultimate[4]).toBe(0.04);
+  });
+});

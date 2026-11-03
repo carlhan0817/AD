@@ -37,7 +37,7 @@ export function toViewModel(snap: OverlaySnapshot): OverlayViewModel {
       valveId: r.candidate.valveId,
       label: snap.labels?.[r.candidate.valveId] ?? String(r.candidate.valveId),
       slotType: r.candidate.slotType,
-      scoreText: r.score.toFixed(2),
+      scoreText: r.score.toFixed(3),
       topSignal: topSignal(r.breakdown),
       highlighted: i === 0,
     })),

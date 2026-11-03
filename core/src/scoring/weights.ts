@@ -34,6 +34,7 @@ export function resolveWeights(
     }
     out.base = (cfg.roundWeights.base[r] ?? 0) * seatFactor;
     out.synergy = cfg.roundWeights.synergy[r] ?? 0;
+    if (cfg.categoryNeed !== undefined) out.need = 1;
     if (cfg.roundWeights.aghs !== undefined) out.aghs = cfg.roundWeights.aghs[r] ?? 0;
     if (cfg.roundWeights.shard !== undefined) out.shard = cfg.roundWeights.shard[r] ?? 0;
     return out;

@@ -44,6 +44,8 @@ const EXPECT: Record<string, { taken: number[]; active: number | null; myPicks?:
   "07-47-05": { taken: [0, 1, 2, 3, 5, 6, 7, 8, 11], active: 0, myHero: "naga_siren" },
   "07-52-45": { taken: [], active: null, myPicks: [], myHero: null },
   "07-53-37": { taken: [3], active: 0, myHero: "morphling" },
+  // 2026-11-03 坐右1:选了 3 个普通技能,没选大招和英雄(Feast 落在坐标表标成「终极」的格里)。
+  "00-51-39": { taken: [1, 3, 5, 8], active: 5, myHero: null, me: 5 },
   // 2026-10-28 两局自定义:第一局坐左1,第二局坐右4(行 8)。
   "05-31-14": { taken: [], active: null, myPicks: [], myHero: null, me: 0 },
   "05-32-43": { taken: [], active: null, myPicks: [], myHero: null, me: 8 },
@@ -139,6 +141,15 @@ describe.skipIf(!hasAssets)("运行时真帧:完整扫描流程(按时间顺序)
         expect([k, hero]).toEqual([k, e.myHero]);
       }
     }
+  });
+
+  it("普通技能选满 3 个后不再推荐普通技能,只推大招和英雄(类型查技能本身,不看卡上哪一格)", () => {
+    const r = results.get("00-51-39")!;
+    expect([r.me.normals.length, r.me.ultimates.length]).toEqual([3, 0]);
+    const types = new Set(r.recommendations.map((x) => x.candidate.slotType));
+    expect(types.has("normal")).toBe(false);
+    expect(types.has("ultimate")).toBe(true);
+    expect(types.has("hero")).toBe(true);
   });
 
   it("第几手 = 已被选走的技能数 + 英雄数 + 1;选了英雄后不再推荐英雄", () => {

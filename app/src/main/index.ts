@@ -179,6 +179,11 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
         diag(`[scan] 帧 ${frames.rgb.width}x${frames.rgb.height} 截图(${streamed ? "画面流" : "普通"}) ${t1 - t0}ms 识别 ${Date.now() - t1}ms | ` +
           `池内技能 ${res.pool.length} 可选英雄 ${res.heroes.length}/12(已选走位置 ${res.takenHeroes.join(",") || "无"}) 没认出 ${res.unknownCells} 格` +
           `${res.snapshot.reset ? " (新的一局)" : ""} | 推荐 ${res.recommendations.map((r) => nameOf.get(r.candidate.valveId) ?? r.candidate.valveId).join(", ")}`);
+        // 每条推荐的各项得分,调权重时看。
+        for (const r of res.recommendations) {
+          const parts = Object.entries(r.breakdown).filter(([, v]) => v !== 0).map(([k, v]) => `${k} ${(v as number).toFixed(4)}`);
+          diag(`[scan]   推荐 ${nameOf.get(r.candidate.valveId) ?? r.candidate.valveId} = ${r.score.toFixed(4)} (${parts.join(", ")})`);
+        }
         // 逐组列出认到了什么(英雄 + 3 个普通技能 + 终极),供对照游戏画面核对。
         const heroName = (id: number | null) => (id === null ? "?" : nameOf.get(-id)?.replace(/^Hero: /, "") ?? `hero${id}`);
         const cellName = (c: { empty: boolean; name: string | null }) =>

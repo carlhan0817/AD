@@ -22,7 +22,7 @@ describe("toViewModel", () => {
   it("formats score and surfaces top contributing signal", () => {
     const vm = toViewModel(snap);
     expect(vm.rows[0].topSignal).toBe("synergy"); // 最大 breakdown 项
-    expect(vm.rows[0].scoreText).toBe("0.30");
+    expect(vm.rows[0].scoreText).toBe("0.300");
   });
   it("passes remaining quota through for the quota bar", () => {
     expect(toViewModel(snap).remaining).toEqual({ hero: 0, normal: 3, ultimate: 1 });

@@ -49,5 +49,28 @@
     "aghsStackBonus": 0.5,
     "shardStackBonus": 0.5,
     "stackCap": 2
+  },
+  "categoryNeed": {
+    "hero": [
+      0,
+      0,
+      0.01,
+      0.02,
+      0.04
+    ],
+    "ultimate": [
+      0,
+      0,
+      0.01,
+      0.02,
+      0.04
+    ],
+    "normal": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
   }
 }

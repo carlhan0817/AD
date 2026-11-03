@@ -78,6 +78,8 @@ export function findActiveRow(frame: RgbFrame, rect: ClientRect): number | null 
   return gold.length === 1 ? gold[0].row : null;
 }
 
+// 卡上哪一格放什么不能当类型用:真机上右列卡的普通技能会落在坐标表标成「终极」的格里
+// (坐标表把右列的终极格标在最左边)。normals/ultimate 只反映格子位置,类型要查技能本身。
 export interface CardPicks {
   row: number;
   normals: string[];

@@ -130,14 +130,14 @@ export async function scanPool(
     // 只采信本局池子里出现过的技能。
     const inPool = new Set(snapshot.names.filter((n): n is string => n !== null));
     const raw = cards[myRow];
-    const normals = raw.normals.filter((n) => inPool.has(n));
-    const ultimate = raw.ultimate !== null && inPool.has(raw.ultimate) ? raw.ultimate : null;
-    myPicks = {
-      ...raw, normals, ultimate,
-      unknown: raw.unknown + raw.normals.length - normals.length + (raw.ultimate !== null && ultimate === null ? 1 : 0),
-    };
-    for (const n of myPicks.normals) { const v = deps.lookup.get(n)?.valveId; if (v !== undefined) me.normals.push(v); }
-    if (myPicks.ultimate !== null) { const v = deps.lookup.get(myPicks.ultimate)?.valveId; if (v !== undefined) me.ultimates.push(v); }
+    // 类型查技能本身,不看它落在卡上哪一格(见 CardPicks 的注释)。
+    const onMyCard = [...raw.normals, ...(raw.ultimate !== null ? [raw.ultimate] : [])];
+    const known = onMyCard.filter((n) => inPool.has(n) && deps.lookup.has(n));
+    const normals = known.filter((n) => deps.lookup.get(n)!.slotType === "normal");
+    const ultimates = known.filter((n) => deps.lookup.get(n)!.slotType === "ultimate");
+    myPicks = { ...raw, normals, ultimate: ultimates[0] ?? null, unknown: raw.unknown + onMyCard.length - known.length };
+    me.normals.push(...normals.map((n) => deps.lookup.get(n)!.valveId));
+    me.ultimates.push(...ultimates.map((n) => deps.lookup.get(n)!.valveId));
     if (deps.memory.myHeroId === null && deps.heroPortraits !== undefined && takenHeroes.size > 0) {
       // 只在本局已被选走的英雄里找(我的英雄一定在其中)。
       const candidates = new Map<number, Float32Array[]>();
@@ -160,13 +160,14 @@ export async function scanPool(
   }
   const seat = deps.memory.mySeat;
   // 认出了「我」才用上下文(已选技能、配额、第几手);认不出时 pickIndex 也不用,免得按错的人推荐。
-  // 技能与英雄分开排:技能取前 topK−1 个,英雄(还没选英雄时)单独给最好的 1 个,排在最后。
+  // 技能与英雄分开取:技能取前 topK−1 个,英雄(还没选英雄时)取最好的 1 个,再合起来按分数排,
+  // 这样分类需求把英雄抬高时,英雄也能排第一。
   const pi = myRow === null ? null : pickIndex;
   const extras = { seat, similar: deps.similar };
   const bestHero = recommend(candidates.filter((c) => c.slotType === "hero"), me, pi, deps.ref, deps.cfg, extras).slice(0, 1);
   const abilityCount = Math.max(1, deps.cfg.topK - bestHero.length);
   const abilityRecs = recommend(candidates.filter((c) => c.slotType !== "hero"), me, pi, deps.ref, { ...deps.cfg, topK: abilityCount }, extras);
-  const recommendations = [...abilityRecs, ...bestHero];
+  const recommendations = [...abilityRecs, ...bestHero].sort((a, b) => b.score - a.score);
   const highlights = highlightsFor(
     recommendations.map((r) => r.candidate.valveId), deps.rect,
     (id) => {
