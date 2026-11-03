@@ -18,25 +18,34 @@ export function roundOf(pickIndex: number | null): number {
   return Math.min(5, Math.max(1, Math.ceil(pickIndex / 10)));
 }
 
+/** 查按轮次的表(5 个数对应每轮第一手),中间逐手线性过渡,不在轮次交界处跳变。
+ *  第 5 轮之后保持最后一个数;未知按第 1 手。 */
+export function atPick(table: number[], pickIndex: number | null): number {
+  if (table.length === 0) return 0;
+  const t = Math.max(0, ((pickIndex ?? 1) - 1) / 10);
+  const i = Math.min(table.length - 1, Math.floor(t));
+  const next = table[Math.min(table.length - 1, i + 1)];
+  return table[i] + (next - table[i]) * (t - i);
+}
+
 /** 解析本手各信号实际权重。pickIndex=null → f_front=f_back=0(无前后置倾向)。
- *  配了 roundWeights 时,base/synergy 按轮次查表(单技能递减、搭配上升),其余维度用基础权重。 */
+ *  配了 roundWeights 时,base/synergy 按轮次表逐手过渡(单技能递减、搭配上升),其余维度用基础权重。 */
 export function resolveWeights(
   cfg: ScoringConfig,
   pickIndex: number | null,
   seat: number | null = null,
 ): Partial<Record<SignalId, number>> {
   if (cfg.roundWeights !== undefined) {
-    const r = roundOf(pickIndex) - 1;
     const seatFactor = seat === null ? 1 : 1 + (cfg.seatBaseBonus ?? 0) * ((10 - seat) / 9);
     const out: Partial<Record<SignalId, number>> = {};
     for (const id of Object.keys(cfg.baseWeights) as SignalId[]) {
       if (cfg.baseWeights[id]) out[id] = cfg.baseWeights[id];
     }
-    out.base = (cfg.roundWeights.base[r] ?? 0) * seatFactor;
-    out.synergy = cfg.roundWeights.synergy[r] ?? 0;
+    out.base = atPick(cfg.roundWeights.base, pickIndex) * seatFactor;
+    out.synergy = atPick(cfg.roundWeights.synergy, pickIndex);
     if (cfg.categoryNeed !== undefined) out.need = 1;
-    if (cfg.roundWeights.aghs !== undefined) out.aghs = cfg.roundWeights.aghs[r] ?? 0;
-    if (cfg.roundWeights.shard !== undefined) out.shard = cfg.roundWeights.shard[r] ?? 0;
+    if (cfg.roundWeights.aghs !== undefined) out.aghs = atPick(cfg.roundWeights.aghs, pickIndex);
+    if (cfg.roundWeights.shard !== undefined) out.shard = atPick(cfg.roundWeights.shard, pickIndex);
     return out;
   }
   const ff = pickIndex === null ? 0 : fFront(pickIndex, cfg.firstRoundSize);

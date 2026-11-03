@@ -47,6 +47,8 @@
 
 - `roundWeights.base`:第 1~5 轮单技能/英雄强度的权重,逐轮递减。
 - `roundWeights.synergy`:第 1~5 轮搭配的权重,逐轮上升。
+- `synergyTopN`:搭配分只取已选里最配的几件求平均(默认 2),配得差的已选件不再稀释配得好的。
+- 所有按轮次的表都是逐手过渡:5 个数是每轮第一手的值,中间线性变化,轮次交界不跳变。
 - `seatBaseBonus`:选位修正(预留,默认 0)。第一个选的人单技能权重乘 (1+该值),第十个不变,中间线性。
 - `pairFallback`:搭配数据缺失时的估分比例。`single` 是单技能强度,`similar` 是同类技能和你已选技能的搭配。
 - `roundWeights.aghs` / `roundWeights.shard`:第 1~5 轮神杖、魔晶绑定的权重。

@@ -17,7 +17,7 @@ export function recommend(
 ): ScoredCandidate[] {
   const legal = hardFilter(pool, me);             // 第 0 步:先于一切打分
   if (legal.length === 0) return [];
-  const ctx = buildScoringContext(q, me, pickIndex, { ...extras, pairFallback: cfg.pairFallback });
+  const ctx = buildScoringContext(q, me, pickIndex, { ...extras, pairFallback: cfg.pairFallback, synergyTopN: cfg.synergyTopN });
   const ranked = scoreCandidates(legal, ctx, cfg);
   return ranked.slice(0, cfg.topK);                // Top 3~4
 }

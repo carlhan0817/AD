@@ -32,10 +32,11 @@ export const synergy: Signal = (ctx, candidate) => {
     ...ctx.me.ultimates,
   ].filter((id) => id !== candidate.valveId);
   if (mine.length === 0) return 0;
-  let sum = 0;
-  for (const owned of mine) {
+  const each = mine.map((owned) => {
     const wr = ctx.pairWinrate.get(pairKey(candidate.valveId, owned));
-    sum += wr !== undefined ? wr - 0.5 : estimatePair(ctx, candidate.valveId, owned);
-  }
-  return sum / mine.length;
+    return wr !== undefined ? wr - 0.5 : estimatePair(ctx, candidate.valveId, owned);
+  });
+  // 配了 synergyTopN 时只算最配的几件:配得差的已选件不再稀释配得好的。
+  const used = ctx.synergyTopN === undefined ? each : [...each].sort((a, b) => b - a).slice(0, ctx.synergyTopN);
+  return used.reduce((a, b) => a + b, 0) / used.length;
 };

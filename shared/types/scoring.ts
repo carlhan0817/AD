@@ -35,6 +35,8 @@ export interface ScoringContext {
   similar?: ReadonlyMap<number, readonly number[]>;
   /** 搭配数据缺失时的估分比例;不给则缺数据按 0 算。 */
   pairFallback?: PairFallback;
+  /** 搭配分只取已选里最配的几件求平均;不给则对全部已选求平均。 */
+  synergyTopN?: number;
   /** valveId → 胜率行。 */
   winrate: Map<number, WinrateRow>;
   /** "a|b"(a<b 的 valveId 对,字符串键)→ pair 胜率。 */
@@ -99,6 +101,8 @@ export interface ScoringConfig {
   seatBaseBonus?: number;
   /** 搭配数据缺失时的估分比例。 */
   pairFallback?: PairFallback;
+  /** 搭配分只取已选里最配的几件求平均(默认 2):配得差的已选件不再稀释配得好的。 */
+  synergyTopN?: number;
 }
 
 /** 打分结果。breakdown 保留各维度贡献(w·S),供 overlay/解释层 grounded 展示。 */

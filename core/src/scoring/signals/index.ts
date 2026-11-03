@@ -5,7 +5,7 @@ import { base } from "./base";
 import { synergy } from "./synergy";
 import { makePosSignal } from "./pos";
 import { aghs, makeBoundSignal, shard } from "./aghs";
-import { roundOf } from "../weights";
+import { atPick } from "../weights";
 
 /** 已知 SignalId 全集(用于 config 校验)。 */
 export const KNOWN_SIGNALS: SignalId[] = [
@@ -21,7 +21,7 @@ export function buildSignals(cfg: ScoringConfig): Partial<Record<SignalId, Signa
     aghs: cfg.aghsBinding ? makeBoundSignal("aghs", cfg.aghsBinding) : aghs,
     shard: cfg.aghsBinding ? makeBoundSignal("shard", cfg.aghsBinding) : shard,
     // 配额满的类型已被硬过滤剔除,所以这里拿到的都是「还缺」的类型。
-    need: (ctx, c) => cfg.categoryNeed?.[c.slotType]?.[roundOf(ctx.pickIndex) - 1] ?? 0,
+    need: (ctx, c) => atPick(cfg.categoryNeed?.[c.slotType] ?? [], ctx.pickIndex),
     // snipe / teammate_protect:实现后在此注册 + 给基础权重即可生效。
   };
 }

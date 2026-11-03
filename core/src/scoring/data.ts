@@ -12,7 +12,7 @@ export function buildScoringContext(
   q: Queryable,
   me: PlayerState,
   pickIndex: number | null,
-  extras: Pick<ScoringContext, "seat" | "similar" | "pairFallback"> = {},
+  extras: Pick<ScoringContext, "seat" | "similar" | "pairFallback" | "synergyTopN"> = {},
 ): ScoringContext {
   // q.all() 内部用一次性 prepared statement 并自动 finalize,无需手动管理;
   // 连接生命周期由调用方/ReferenceDb 拥有,这里不 close。

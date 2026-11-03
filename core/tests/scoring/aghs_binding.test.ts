@@ -30,10 +30,10 @@ describe("神杖绑定信号", () => {
   it("没有升级的技能为 0,即使增益很高", () => {
     expect(S(ctx([]), c(3))).toBe(0);
   });
-  it("已有 1 件绑定:× 1.5(文档例子),再乘第 3 轮权重 0.4 = 0.062", () => {
+  it("已有 1 件绑定:× 1.5(文档例子),再乘第 3 轮开头的权重 0.4 = 0.062", () => {
     const v = S(ctx([10]), c(1));
     expect(v).toBeCloseTo(0.1545, 6);
-    expect(v * resolveWeights(defaultScoringConfig(), 25).aghs!).toBeCloseTo(0.0618, 4);
+    expect(v * resolveWeights(defaultScoringConfig(), 21).aghs!).toBeCloseTo(0.0618, 4);
   });
   it("叠加最多算 2 件", () => {
     expect(S(ctx([10, 11, 12]), c(1))).toBeCloseTo(0.103 * 2, 6);
@@ -56,9 +56,9 @@ describe("神杖绑定信号", () => {
 describe("接入总分", () => {
   it("默认配置下神杖、魔晶都进总分,并逐轮按表取权重", () => {
     const cfg = defaultScoringConfig();
-    expect([5, 45].map((p) => resolveWeights(cfg, p).aghs)).toEqual([0.3, 0.5]);
-    expect([5, 45].map((p) => resolveWeights(cfg, p).shard)).toEqual([0.2, 0.3]);
-    const [r] = scoreCandidates([c(1)], ctx([]), cfg);
+    expect([1, 41].map((p) => resolveWeights(cfg, p).aghs)).toEqual([0.3, 0.5]);
+    expect([1, 41].map((p) => resolveWeights(cfg, p).shard)).toEqual([0.2, 0.3]);
+    const [r] = scoreCandidates([c(1)], { ...ctx([]), pickIndex: 21 }, cfg);
     expect(r.breakdown.aghs).toBeCloseTo(0.103 * 0.4, 6);
   });
   it("配置文件只写部分参数时,其余用默认值", () => {
@@ -76,9 +76,9 @@ describe("分类需求", () => {
     scoreCandidates([{ valveId: -5, slotType: type }], { ...ctx([]), pickIndex: pick }, cfg)[0].breakdown.need ?? 0;
   it("还没选的英雄/大招随轮次加分,普通技能不加", () => {
     expect(need("hero", 5)).toBe(0);
-    expect(need("hero", 25)).toBe(0.01);
-    expect(need("ultimate", 45)).toBe(0.04);
-    expect(need("normal", 45)).toBe(0);
+    expect(need("hero", 21)).toBe(0.01);
+    expect(need("ultimate", 41)).toBe(0.04);
+    expect(need("normal", 41)).toBe(0);
   });
   it("配置文件能改,缺的类型用默认", () => {
     const c2 = loadScoringConfig('{"categoryNeed":{"hero":[1,1,1,1,1]}}');

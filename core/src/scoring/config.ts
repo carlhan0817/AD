@@ -23,6 +23,7 @@ export function defaultScoringConfig(): ScoringConfig {
       aghsStackBonus: 0.5, shardStackBonus: 0.5, stackCap: 2,
     },
     seatBaseBonus: 0,
+    synergyTopN: 2,
     pairFallback: { single: 0.5, similar: 0.5 },
   };
 }
@@ -48,6 +49,7 @@ export function loadScoringConfig(json: string): ScoringConfig {
     aghsBinding: { ...d.aghsBinding!, ...parsed.aghsBinding },
     categoryNeed: { ...d.categoryNeed!, ...parsed.categoryNeed },
     seatBaseBonus: parsed.seatBaseBonus ?? d.seatBaseBonus,
+    synergyTopN: parsed.synergyTopN ?? d.synergyTopN,
     pairFallback: parsed.pairFallback ?? d.pairFallback,
   };
 }

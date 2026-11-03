@@ -37,7 +37,7 @@ describe("scoreCandidates (dynamic weighting)", () => {
     expect(ranked.map((r) => r.candidate.valveId)).toEqual([5052, -7, 5053]);
   });
 
-  it("first round: synergy counts little, last round: most (round weights)", () => {
+  it("early picks: synergy counts little, last round: most (round weights)", () => {
     const early = scoreCandidates(POOL, ctx(5), defaultScoringConfig()).find((r) => r.candidate.valveId === 5052)!;
     const late = scoreCandidates(POOL, ctx(45), defaultScoringConfig()).find((r) => r.candidate.valveId === 5052)!;
     expect(late.breakdown.synergy!).toBeGreaterThan(early.breakdown.synergy!);
