@@ -20,6 +20,7 @@ function diag(msg: string): void {
 }
 import { OVERLAY_CHANNEL, type OverlaySnapshot } from "@ad/shared/types/ipc";
 import { LiveSnapshotSource, type LiveDeps } from "./live_snapshot_source";
+import { OverlayPresence } from "./presence";
 import { guideMessageFor } from "./display_mode_guide";
 import { setOverlayClickThrough, raiseOverlayZOrder } from "@ad/main/ffi/overlay_window_ctl";
 import { findGameWindow, gameClientRect } from "@ad/main/ffi/game_window";
@@ -119,7 +120,7 @@ async function captureViaStream(win: BrowserWindow): Promise<ReturnType<typeof r
 /** 手动扫描:注册全局热键,每按一次截一帧 → scanPool → 推一帧 snapshot 给 overlay。
  *  资产(分类器/reference.db)加载失败时记日志并降级为不可扫描,overlay 保持显示。
  *  返回停止函数(注销热键 + 关 DB 连接,释放 node-sqlite3-wasm 的锁目录)。 */
-async function startManualScan(win: BrowserWindow): Promise<() => void> {
+async function startManualScan(win: BrowserWindow, presence: OverlayPresence): Promise<() => void> {
   try {
     const paths = resolveModelPaths();
     const clf = await loadClassifier(paths.model, paths.classNames);
@@ -163,6 +164,15 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
     };
     const memory = new PoolMemory();
     let version = 0;
+    const blankSnapshot = (note: string): OverlaySnapshot => ({
+      state: { activeRow: 0, players: [] }, recommendations: [], highlights: [],
+      remaining: { hero: 1, normal: 3, ultimate: 1 }, note, version: ++version,
+    });
+    // GSI 说换了一局:不等画面对不上,直接清空记忆,并撤掉上一局的推荐。
+    presence.onNewDraft = () => {
+      memory.reset();
+      if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot(`新的一局,按 ${SCAN_HOTKEY.replace("CommandOrControl", "Ctrl")} 扫描`));
+    };
     let busy = false;
     const scan = async (): Promise<void> => {
       if (busy) return; // 上一次还没扫完,忽略连按
@@ -180,11 +190,8 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
         if (!res.onDraftScreen) {
           diag(`[scan] 这一帧不是选人界面,已跳过,没有写入记忆(英雄格 饱和度/对比度 ${tileText})`);
           void saveScanFrame(frames.rgb, version + 1);
-          const skipped: OverlaySnapshot = {
-            state: { activeRow: 0, players: [] }, recommendations: [], highlights: [],
-            remaining: { hero: 1, normal: 3, ultimate: 1 }, note: "不在选人界面,这次没有扫描", version: ++version,
-          };
-          if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, skipped);
+          if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot("不在选人界面,这次没有扫描"));
+          presence.onScan(false);
           return;
         }
         diag(`[scan] 帧 ${frames.rgb.width}x${frames.rgb.height} 截图(${streamed ? "画面流" : "普通"}) ${t1 - t0}ms 识别 ${Date.now() - t1}ms | ` +
@@ -238,6 +245,7 @@ async function startManualScan(win: BrowserWindow): Promise<() => void> {
         };
         if (!win.isDestroyed()) {
           win.webContents.send(OVERLAY_CHANNEL, snap);
+          presence.onScan(true);
           const b = win.getBounds();
           diag(`[overlay] 已推送 v${snap.version}(${snap.recommendations.length} 条);窗口 ${b.width}x${b.height}@(${b.x},${b.y}) 可见=${win.isVisible()}`);
         }
@@ -366,6 +374,13 @@ app.whenReady().then(() => {
   }
 
   let stop: () => void = () => {};
+  // 托盘菜单 + 显示/静默控制(GSI 开关也在托盘里)。
+  const presence = new OverlayPresence(win, diag, () => {
+    if (win.isDestroyed()) return;
+    win.showInactive();
+    raiseOverlayZOrder(win);
+  }, () => findGameWindow() !== null);
+  void presence.start().catch((err) => diag(`[presence] 启动失败: ${err}`));
   // 等首帧加载完再开始推送,避免渲染前丢帧。
   win.webContents.once("did-finish-load", () => {
     // 手动扫描与连续监控各开一个 ReferenceDb 连到同一个 reference.db;两个连接并存会被
@@ -379,8 +394,8 @@ app.whenReady().then(() => {
       source.start(1500);
       stop = () => source.stop();
     } else {
-      void startManualScan(win).then((s) => { stop = s; });
+      void startManualScan(win, presence).then((s) => { stop = s; });
     }
   });
-  app.on("window-all-closed", () => { stop(); app.quit(); });
+  app.on("window-all-closed", () => { stop(); presence.stop(); app.quit(); });
 });

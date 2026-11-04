@@ -28,5 +28,15 @@ Report 'Win32 write API outside overlay_window_ctl.ts' (
   $srcTs | Where-Object { $_.FullName -notmatch '\\main\\src\\ffi\\overlay_window_ctl\.ts$' } |
     Select-String -Pattern $writeApi | ForEach-Object { "$($_.Path):$($_.LineNumber): $($_.Line.Trim())" })
 
+# GSI: any server must listen on 127.0.0.1 only (not reachable from other machines).
+Report 'server .listen( not bound to 127.0.0.1' (
+  $srcTs | Select-String -Pattern '\.listen\(' | Where-Object { $_.Line -notmatch '"127\.0\.0\.1"' } |
+    ForEach-Object { "$($_.Path):$($_.LineNumber): $($_.Line.Trim())" })
+
+# GSI: only main/src/gsi/dota_path.ts may touch the Dota cfg folder (one file, with user consent).
+Report 'gamestate_integration referenced outside dota_path.ts / core gsi' (
+  $srcTs | Where-Object { $_.FullName -notmatch '\\main\\src\\gsi\\dota_path\.ts$' -and $_.FullName -notmatch '\\core\\src\\gsi\\gsi\.ts$' } |
+    Select-String -Pattern 'gamestate_integration[\\/"]' | ForEach-Object { "$($_.Path):$($_.LineNumber): $($_.Line.Trim())" })
+
 if ($fail) { Write-Host "`nCOMPLIANCE SCAN FAILED" -ForegroundColor Red; exit 1 }
 Write-Host "compliance scan clean" -ForegroundColor Green; exit 0
