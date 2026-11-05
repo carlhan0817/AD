@@ -15,6 +15,7 @@ const FindWindowW = user32.func("__stdcall", "FindWindowW", "void *", ["str16", 
 const GetClientRect = user32.func("__stdcall", "GetClientRect", "bool", ["void *", koffi.out(koffi.pointer(RECT))]);
 const ClientToScreen = user32.func("__stdcall", "ClientToScreen", "bool", ["void *", koffi.inout(koffi.pointer(POINT))]);
 const GetWindowLongW = user32.func("__stdcall", "GetWindowLongW", "long", ["void *", "int"]);
+const GetForegroundWindow = user32.func("__stdcall", "GetForegroundWindow", "void *", []);
 const GWL_STYLE = -16, GWL_EXSTYLE = -20;
 
 // 私有:唯一铸造点。raw 必然来自 FindWindowW。
@@ -40,4 +41,11 @@ export function gameWindowStyleRaw(hwnd: ReadonlyGameHwnd): { style: number; exS
   const style = GetWindowLongW(hwnd as unknown as Buffer, GWL_STYLE);
   const exStyle = GetWindowLongW(hwnd as unknown as Buffer, GWL_EXSTYLE);
   return { style, exStyle };
+}
+
+/** 游戏窗口现在是不是最前面的窗口。只读查询(GetForegroundWindow),不改任何窗口状态。 */
+export function isGameForeground(hwnd: ReadonlyGameHwnd): boolean {
+  const fg = GetForegroundWindow() as unknown as number | bigint | null;
+  if (!fg) return false;
+  return BigInt(fg) === BigInt(hwnd);
 }
