@@ -95,7 +95,7 @@ export function startAutoScan(deps: AutoScanDeps): () => void {
   /** 结果回来时模式还是不是取帧时那个。 */
   const stillIn = (mode: AutoMode): boolean => schedule.mode(inputs()) === mode;
 
-  const tick = async (): Promise<number> => {
+  const tick = async (): Promise<void> => {
     const i = inputs();
     const mode = schedule.mode(i);
     if (mode !== lastMode) {
@@ -103,47 +103,49 @@ export function startAutoScan(deps: AutoScanDeps): () => void {
       if (mode !== "draft") { gate = new SettleGate(); prevSig = null; retry = false; }
       lastMode = mode;
     }
-    const interval = intervalFor(mode);
-    if (interval === null || mode === "off") return OFF_POLL_MS;
+    if (mode === "off") return;
 
     const fg = deps.gameForeground();
     if (fg === skippedBackground) {
       skippedBackground = !fg;
       diag(fg ? "[auto] Dota 回到最前面,接着看" : "[auto] Dota 不在最前面,先不看(不算不是选人界面)");
     }
-    if (!fg) return interval;
+    if (!fg) return;
 
     const frames = await deps.grabStreamFrame(mode);
-    if (frames === null || stopped) return interval;
-    if (!deps.gameForeground()) return interval; // 取帧途中切走了:这一帧不是 Dota
+    if (frames === null || stopped) return;
+    if (!deps.gameForeground()) return; // 取帧途中切走了:这一帧不是 Dota
     const rect = deps.rect();
 
     if (mode === "watch") {
       const looks = findMyRow(frames.rgb, rect) !== null;
-      if (!stillIn(mode)) return interval; // 模式已变,结果作废
+      if (!stillIn(mode)) return; // 模式已变,结果作废
       if (looks) diag("[auto] 看到了我的绿色外框,像是选人界面");
       schedule.onWatchResult(looks);
-      return interval;
+      return;
     }
 
     const sig = boardSignature(frames.rgb, rect);
     const why = draftTrigger(prevSig, sig, gate.push(sig, now()), retry);
     prevSig = sig;
-    if (why === null) return interval;
-    if (!stillIn(mode)) return interval;
+    if (why === null) return;
+    if (!stillIn(mode)) return;
     diag(`[auto] 识别:${why}`);
     const res = await deps.scan(frames);
     retry = res === null;
-    if (res === null || stopped) return interval;
-    if (!stillIn(mode)) { diag("[auto] 识别完时自动扫描已切换模式,这次结果不计"); return interval; }
+    if (res === null || stopped) return;
+    if (!stillIn(mode)) { diag("[auto] 识别完时自动扫描已切换模式,这次结果不计"); return; }
     schedule.onDraftScan(res.onDraftScreen);
-    return interval;
   };
+
+  /** 下一次 tick 的间隔按这一轮结束时的模式算:watch 刚看到选人界面就按 draft 的 1 秒走,
+   *  Dota 刚关就按 off 走,不用再等完上一模式的整个间隔。 */
+  const nextDelay = (): number => intervalFor(schedule.mode(inputs())) ?? OFF_POLL_MS;
 
   const loop = (): void => {
     if (stopped) return;
     tick().then(
-      (ms) => { if (!stopped) timer = setTimer(loop, ms); },
+      () => { if (!stopped) timer = setTimer(loop, nextDelay()); },
       (err) => { diag(`[auto] 出错: ${err}`); if (!stopped) timer = setTimer(loop, OFF_POLL_MS); },
     );
   };

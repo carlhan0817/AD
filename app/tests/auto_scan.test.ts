@@ -150,8 +150,26 @@ describe("startAutoScan", () => {
       gameRunning: () => running,
       grabStreamFrame: vi.fn(async () => { running = false; return blackFrames(); }),
     });
-    expect(await h.settle()).toBe(WATCH_INTERVAL_MS);
+    expect(await h.settle()).toBe(OFF_POLL_MS); // Dota 关了:下一次按 off 的间隔,不等满 3 秒
     expect(onWatch).not.toHaveBeenCalled();
+    h.stop();
+  });
+
+  it("watch 没看到选人界面:下一次还是 3 秒后", async () => {
+    const h = harness({});
+    expect(await h.settle()).toBe(WATCH_INTERVAL_MS);
+    h.stop();
+  });
+
+  it("watch 看到选人界面:下一次按 draft 的 1 秒走,不再等 3 秒", async () => {
+    const schedule = new AutoScanSchedule();
+    // 合成帧上画不出我的绿框,这里直接让 schedule 收到「看到了」。
+    vi.spyOn(schedule, "onWatchResult").mockImplementation(() => AutoScanSchedule.prototype.onWatchResult.call(schedule, true));
+    const h = harness({ schedule });
+    expect(await h.settle()).toBe(DRAFT_INTERVAL_MS);
+    await h.step();
+    expect(h.logs).toContain("[auto] 自动扫描 watch→draft(没 GSI,看到了选人界面)");
+    expect(h.deps.scan).toHaveBeenCalledTimes(1);
     h.stop();
   });
 

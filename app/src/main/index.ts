@@ -361,8 +361,14 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
 
     // 自动扫描。对比模式是诊断用的,只用热键,不开自动扫描。
     // 取帧:画面流优先;画面流失败时选人阶段退回普通截图(选人阶段普通截图不影响 FPS,已实测),
-    // 轻量查看(可能在游戏里)不退回——普通截图每次都让游戏顿一下,宁可这一轮不看。
+    // 轻量查看(可能在游戏里)从不用普通截图——普通截图每次都让游戏顿一下,宁可这一轮不看。
+    // 关了画面流(AD_NO_STREAM_CAPTURE)时轻量查看整个不做:没 GSI 就进不了自动扫描,开了 GSI 照常。
+    let noStreamWarned = false;
     const grabStreamFrame = async (mode: "watch" | "draft"): Promise<Frames | null> => {
+      if (!STREAM_CAPTURE && mode === "watch") {
+        if (!noStreamWarned) { noStreamWarned = true; diag("[auto] 关了画面流,不做轻量查看:没开 GSI 时自动扫描用不了(只用热键);开了 GSI 照常"); }
+        return null;
+      }
       if (STREAM_CAPTURE) {
         const s = await captureViaStream(win);
         if (s !== null || mode === "watch") return s;
@@ -518,8 +524,14 @@ app.whenReady().then(() => {
       source.start(1500);
       stop = () => source.stop();
     } else {
-      void startManualScan(win, presence).then((s) => { stop = s; });
+      // 资产加载完之前就退出了:加载完立刻收尾,不留 DB 锁。
+      void startManualScan(win, presence).then((s) => { if (cleaned) s(); else stop = s; });
     }
   });
-  app.on("window-all-closed", () => { stop(); presence.stop(); app.quit(); });
+  // 收尾(停自动扫描、注销热键、关 DB 释放锁目录、关托盘/GSI 服务器)只做一次。
+  // 托盘「退出」直接 app.quit(),不经过 window-all-closed,所以 before-quit 里也要收尾。
+  let cleaned = false;
+  const cleanup = () => { if (cleaned) return; cleaned = true; stop(); presence.stop(); };
+  app.on("before-quit", cleanup);
+  app.on("window-all-closed", () => { cleanup(); app.quit(); });
 });
