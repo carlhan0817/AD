@@ -1,10 +1,22 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// 合成帧上画不出我的绿框和金卡:轻量查看用到的两个判断改成可控的(null = 用真实实现)。
+const cards = vi.hoisted(() => ({ myRow: null as number | null, activeRow: null as number | null }));
+vi.mock("@ad/core/recognition/card_reading", async (orig) => {
+  const real = await orig<typeof import("@ad/core/recognition/card_reading")>();
+  return {
+    ...real,
+    findMyRow: (...a: Parameters<typeof real.findMyRow>) => cards.myRow ?? real.findMyRow(...a),
+    findActiveRow: (...a: Parameters<typeof real.findActiveRow>) => cards.activeRow ?? real.findActiveRow(...a),
+  };
+});
+
 import {
-  draftTrigger, modeChangeLine, modeReason, OFF_POLL_MS, startAutoScan, turnReadingOf,
-  type AutoScanDeps, type Frames,
+  AutoFramePolicy, draftRequest, looksLikeDraft, modeChangeLine, modeReason, OFF_POLL_MS,
+  SCAN_RETRY_BACKOFF_MS, startAutoScan, turnReadingOf, WATCH_STATS_EVERY_MS,
+  type AutoScanDeps, type AutoScanRequest, type Frames,
 } from "../src/main/auto_scan";
 import { AutoScanSchedule, DRAFT_INTERVAL_MS, WATCH_INTERVAL_MS } from "@ad/core/autoscan/schedule";
-import { boardSignature } from "@ad/core/autoscan/board_change";
 import { GSI_HERO_SELECTION, type GsiState } from "@ad/core/gsi/gsi";
 import type { PoolScanResult } from "@ad/main/capture/scan_pool";
 
@@ -18,6 +30,8 @@ const result = (o: Partial<PoolScanResult> = {}): PoolScanResult => ({
   onDraftScreen: true, myRow: 2, activeRow: 5, unknownCells: 0, myPicks: null,
   me: { row: 2, hero: null, normals: [], ultimates: [] }, ...o,
 } as PoolScanResult);
+
+beforeEach(() => { cards.myRow = null; cards.activeRow = null; });
 
 describe("turnReadingOf", () => {
   it("我的选数 = 技能数 + 英雄(选了算 1)", () => {
@@ -46,20 +60,56 @@ describe("模式日志", () => {
   });
 });
 
-describe("draftTrigger", () => {
-  const a = boardSignature(blackFrames().rgb, RECT);
-  it("闸门放行:首帧 / 静止 / 超时;不放行时只有重试才识别", () => {
-    expect(draftTrigger(null, a, true, false)).toMatch(/刚进选人/);
-    expect(draftTrigger(a, a, true, false)).toMatch(/已静止/);
-    expect(draftTrigger({ ...a, activeRow: 2 }, { ...a, activeRow: 1 }, true, false)).toMatch(/3 秒/);
-    expect(draftTrigger(a, a, false, true)).toMatch(/重试/);
-    expect(draftTrigger(a, a, false, false)).toBeNull();
+describe("draftRequest", () => {
+  it("只有静止的画面写记忆;首帧和超时只试读;不放行时只有重试才识别(沿用那次的写不写)", () => {
+    expect(draftRequest("first", null)).toMatchObject({ commit: false, reason: expect.stringMatching(/刚进选人/) });
+    expect(draftRequest("settled", null)).toMatchObject({ commit: true, reason: expect.stringMatching(/已静止/) });
+    expect(draftRequest("timeout", null)).toMatchObject({ commit: false, reason: expect.stringMatching(/3 秒/) });
+    const prev: AutoScanRequest = { commit: true, reason: "画面已静止" };
+    expect(draftRequest(null, prev)).toEqual({ commit: true, reason: "上次没识别成,重试(画面已静止)" });
+    expect(draftRequest("timeout", prev)?.commit).toBe(false); // 新的放行优先
+    expect(draftRequest(null, null)).toBeNull();
   });
 });
 
-/** 假时钟:setTimer 只记下回调,step() 等当前 tick 跑完再触发下一个。 */
+describe("looksLikeDraft", () => {
+  it("绿框和金卡都要有", () => {
+    const f = blackFrames().rgb;
+    expect(looksLikeDraft(f, RECT)).toBe(false);
+    cards.myRow = 2;
+    expect(looksLikeDraft(f, RECT)).toBe(false);
+    cards.activeRow = 5;
+    expect(looksLikeDraft(f, RECT)).toBe(true);
+  });
+});
+
+describe("AutoFramePolicy(自动扫描存帧)", () => {
+  it("这局见到选人界面之前一张不存", () => {
+    const p = new AutoFramePolicy();
+    expect([p.shouldSave(false), p.shouldSave(false)]).toEqual([false, false]);
+    expect(p.shouldSave(true)).toBe(true);
+  });
+  it("不是选人界面的帧只存选人界面之后的第一张", () => {
+    const p = new AutoFramePolicy();
+    p.shouldSave(true);
+    expect([p.shouldSave(false), p.shouldSave(false), p.shouldSave(true), p.shouldSave(false)]).toEqual([true, false, true, true]);
+  });
+  it("不是选人界面的帧每局最多存 10 张;newGame 后重新计", () => {
+    const p = new AutoFramePolicy();
+    let saved = 0;
+    for (let k = 0; k < 15; k++) { p.shouldSave(true); if (p.shouldSave(false)) saved++; }
+    expect(saved).toBe(10);
+    p.newGame();
+    expect(p.shouldSave(false)).toBe(false);
+    p.shouldSave(true);
+    expect(p.shouldSave(false)).toBe(true);
+  });
+});
+
+/** 假时钟:setTimer 只记下回调,step() 把时钟拨过这段间隔、等当前 tick 跑完再触发下一个。 */
 function harness(over: Partial<AutoScanDeps>) {
   const logs: string[] = [];
+  const clock = { t: 0 };
   const t: { next: { fn: () => void; ms: number } | null } = { next: null };
   const deps: AutoScanDeps = {
     schedule: new AutoScanSchedule(),
@@ -71,6 +121,7 @@ function harness(over: Partial<AutoScanDeps>) {
     grabStreamFrame: vi.fn(async () => blackFrames()),
     scan: vi.fn(async () => result()),
     diag: (m) => logs.push(m),
+    now: () => clock.t,
     setTimer: (fn, ms) => { t.next = { fn, ms }; return 1; },
     clearTimer: () => { t.next = null; },
     ...over,
@@ -79,10 +130,14 @@ function harness(over: Partial<AutoScanDeps>) {
   const pending = () => t.next;
   const stop = startAutoScan(deps);
   return {
-    deps, logs, stop,
+    deps, logs, stop, clock,
     /** 等当前 tick 跑完,返回它定的下一次间隔。 */
     settle: async () => { for (let k = 0; k < 5; k++) await flush(); return pending()?.ms; },
-    step: async () => { const n = t.next; t.next = null; n?.fn(); for (let k = 0; k < 5; k++) await flush(); return pending()?.ms; },
+    step: async () => {
+      const n = t.next; t.next = null; clock.t += n?.ms ?? 0; n?.fn();
+      for (let k = 0; k < 5; k++) await flush();
+      return pending()?.ms;
+    },
   };
 }
 
@@ -116,29 +171,67 @@ describe("startAutoScan", () => {
     h.stop();
   });
 
-  it("draft:首帧识别,结果喂给 schedule;画面没变就不再识别", async () => {
+  it("draft:首帧试读(不写记忆),静止后再识别一次(写记忆),结果喂给 schedule;之后画面没变不再识别", async () => {
     const schedule = new AutoScanSchedule();
     const onDraftScan = vi.spyOn(schedule, "onDraftScan");
-    const h = harness({ schedule, gsi: () => gs(GSI_HERO_SELECTION) });
+    const scan = vi.fn(async (_f: Frames, _r: AutoScanRequest) => result());
+    const h = harness({ schedule, scan, gsi: () => gs(GSI_HERO_SELECTION) });
     expect(await h.settle()).toBe(DRAFT_INTERVAL_MS);
-    expect(h.deps.scan).toHaveBeenCalledTimes(1);
+    expect(scan).toHaveBeenCalledTimes(1);
+    expect(scan.mock.calls[0][1].commit).toBe(false);
     expect(onDraftScan).toHaveBeenCalledWith(true);
     await h.step();
     await h.step();
-    expect(h.deps.scan).toHaveBeenCalledTimes(1);
+    expect(scan).toHaveBeenCalledTimes(2);
+    expect(scan.mock.calls[1][1]).toEqual({ commit: true, reason: "画面已静止" });
+    await h.step();
+    await h.step();
+    expect(scan).toHaveBeenCalledTimes(2);
     h.stop();
   });
 
-  it("识别没跑成(返回 null,比如热键正在扫):下一帧重试", async () => {
-    const scan = vi.fn<(f: Frames) => Promise<PoolScanResult | null>>().mockResolvedValueOnce(null).mockResolvedValue(result());
+  it("识别没跑成(返回 null,比如热键正在扫):下一帧带着原请求重试", async () => {
+    const scan = vi.fn<(f: Frames, r: AutoScanRequest) => Promise<PoolScanResult | null>>()
+      .mockResolvedValueOnce(null).mockResolvedValue(result());
     const h = harness({ scan, gsi: () => gs(GSI_HERO_SELECTION) });
     await h.settle();
     await h.step();
     expect(scan).toHaveBeenCalledTimes(2);
+    expect(scan.mock.calls[1][1].commit).toBe(false);
     expect(h.logs.some((l) => l.includes("重试"))).toBe(true);
-    await h.step();
-    expect(scan).toHaveBeenCalledTimes(2);
     h.stop();
+  });
+
+  it("识别连续失败 3 次:之后每 5 秒重试,只记一行「连续失败」;成功后恢复每秒", async () => {
+    let fail = true;
+    const scan = vi.fn(async () => (fail ? null : result()));
+    const h = harness({ scan, gsi: () => gs(GSI_HERO_SELECTION) });
+    expect(await h.settle()).toBe(DRAFT_INTERVAL_MS);
+    expect(await h.step()).toBe(DRAFT_INTERVAL_MS);
+    expect(await h.step()).toBe(SCAN_RETRY_BACKOFF_MS);
+    expect(await h.step()).toBe(SCAN_RETRY_BACKOFF_MS);
+    expect(h.logs.filter((l) => l.includes("连续失败")).length).toBe(1);
+    expect(h.logs.filter((l) => l.includes("[auto] 识别:")).length).toBe(3); // 放慢后不再每次记
+    fail = false;
+    expect(await h.step()).toBe(DRAFT_INTERVAL_MS);
+    expect(h.logs.some((l) => l.includes("识别恢复了"))).toBe(true);
+    h.stop();
+  });
+
+  it("取帧退回普通截图只在开着 GSI 的 draft 允许", async () => {
+    const grab = vi.fn(async (_m: "watch" | "draft", _fb: boolean) => blackFrames());
+    const h = harness({ grabStreamFrame: grab, gsi: () => gs(GSI_HERO_SELECTION) });
+    await h.settle();
+    expect(grab.mock.calls[0]).toEqual(["draft", true]);
+    h.stop();
+    cards.myRow = 2; cards.activeRow = 5;
+    const grab2 = vi.fn(async (_m: "watch" | "draft", _fb: boolean) => blackFrames());
+    const h2 = harness({ grabStreamFrame: grab2 });
+    await h2.settle();
+    await h2.step();
+    await h2.step(); // 没 GSI 进的 draft
+    expect(grab2.mock.calls.map((c) => c.join(":"))).toEqual(["watch:false", "watch:false", "draft:false"]);
+    h2.stop();
   });
 
   it("watch 结果回来时 Dota 已关:结果作废,不会在下次开 Dota 时直接进 draft", async () => {
@@ -161,15 +254,36 @@ describe("startAutoScan", () => {
     h.stop();
   });
 
-  it("watch 看到选人界面:下一次按 draft 的 1 秒走,不再等 3 秒", async () => {
-    const schedule = new AutoScanSchedule();
-    // 合成帧上画不出我的绿框,这里直接让 schedule 收到「看到了」。
-    vi.spyOn(schedule, "onWatchResult").mockImplementation(() => AutoScanSchedule.prototype.onWatchResult.call(schedule, true));
-    const h = harness({ schedule });
-    expect(await h.settle()).toBe(DRAFT_INTERVAL_MS);
+  it("watch 连续 2 次像选人界面才进 draft,下一次按 draft 的 1 秒走", async () => {
+    cards.myRow = 2; cards.activeRow = 5;
+    const h = harness({});
+    expect(await h.settle()).toBe(WATCH_INTERVAL_MS); // 第 1 次还不算
+    expect(await h.step()).toBe(DRAFT_INTERVAL_MS);
     await h.step();
     expect(h.logs).toContain("[auto] 自动扫描 watch→draft(没 GSI,看到了选人界面)");
     expect(h.deps.scan).toHaveBeenCalledTimes(1);
+    h.stop();
+  });
+
+  it("watch 中间断一次就重新数;只有绿框没有金卡不算", async () => {
+    cards.myRow = 2; cards.activeRow = 5;
+    const h = harness({});
+    await h.settle();
+    cards.activeRow = null; // 合成帧上真实的 findActiveRow 读不到金卡
+    expect(await h.step()).toBe(WATCH_INTERVAL_MS);
+    cards.activeRow = 5;
+    expect(await h.step()).toBe(WATCH_INTERVAL_MS);
+    expect(await h.step()).toBe(DRAFT_INTERVAL_MS);
+    h.stop();
+  });
+
+  it("watch 每分钟记一行取帧统计", async () => {
+    cards.myRow = 2; // 只有绿框:取帧算,像选人界面不算
+    const h = harness({});
+    await h.settle();
+    for (let k = 0; k < 20; k++) await h.step(); // 3 秒一次,第 21 帧在 60 秒
+    expect(h.logs.filter((l) => l.startsWith("[auto] 查看中"))).toEqual(["[auto] 查看中:过去一分钟取帧 21 次,像选人界面 0 次"]);
+    expect(WATCH_STATS_EVERY_MS).toBe(60_000);
     h.stop();
   });
 

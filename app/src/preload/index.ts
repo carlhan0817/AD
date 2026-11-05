@@ -31,8 +31,21 @@ function stopStream(): void {
   video = null;
 }
 
+/** 正在开的流:开流要一两秒,期间又来一次取帧就等这一个,不再开第二条(否则前一条没人关)。 */
+let opening: Promise<HTMLVideoElement> | null = null;
+
 async function ensureStream(req: GrabRequest): Promise<HTMLVideoElement> {
+  if (opening !== null) {
+    const v = await opening.catch(() => null);
+    if (v !== null && v === video && v.videoWidth === req.width && v.videoHeight === req.height) return v;
+  }
   if (video !== null && video.videoWidth === req.width && video.videoHeight === req.height) return video;
+  const p = openStream(req);
+  opening = p;
+  try { return await p; } finally { if (opening === p) opening = null; }
+}
+
+async function openStream(req: GrabRequest): Promise<HTMLVideoElement> {
   stopStream();
   const mandatory = {
     chromeMediaSource: "desktop", chromeMediaSourceId: req.sourceId,
@@ -56,7 +69,8 @@ async function ensureStream(req: GrabRequest): Promise<HTMLVideoElement> {
   const v = document.createElement("video");
   v.srcObject = stream;
   v.muted = true;
-  await v.play();
+  try { await v.play(); }
+  catch (err) { stream.getTracks().forEach((t) => t.stop()); throw err; }
   video = v;
   return v;
 }
