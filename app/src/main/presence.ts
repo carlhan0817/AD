@@ -1,6 +1,7 @@
 // app/src/main/presence.ts
 // 悬浮窗什么时候出现、什么时候静默,以及 GSI 的开关。
-//   - 启用了 GSI 且它还在工作:以 GSI 的游戏阶段为准(只有选人阶段显示)。
+//   - 启用了 GSI 且它还在工作:选人阶段显示(连续 2 次扫描都不是 AD 选人界面则隐藏);
+//     加载中 / 不在对局里时看画面(最近一次扫描是选人界面才显示);其他阶段静默。
 //   - 没有 GSI:连续 2 次扫描都不是选人界面就静默,扫到选人界面就恢复。
 // GSI 的配置文件只在用户点了托盘菜单里的「启用」、并在弹窗里确认后才写;
 // 写完要重启 Dota 才生效。设置(开关、端口、口令、Dota 位置)存在用户数据目录的 gsi.json。
@@ -8,7 +9,7 @@ import { app, dialog, Menu, nativeImage, Tray, type BrowserWindow } from "electr
 import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildGsiCfg, decideOverlay, GSI_HERO_SELECTION, GsiTracker, parseGsiCfg, type GsiState } from "@ad/core/gsi/gsi";
+import { buildGsiCfg, decideOverlay, GSI_HERO_SELECTION, GSI_INIT, GSI_WAIT_FOR_PLAYERS, GsiTracker, parseGsiCfg, type GsiState } from "@ad/core/gsi/gsi";
 import { startGsiServer, type GsiServer } from "@ad/main/gsi/server";
 import { findDotaDir, gsiCfgPath, readGsiCfg, removeGsiCfg, writeGsiCfg } from "@ad/main/gsi/dota_path";
 
@@ -93,10 +94,15 @@ export class OverlayPresence {
       this.diag(`[gsi] 阶段 ${this.lastPhase === undefined ? "(开始)" : this.lastPhase ?? "不在对局里"} → ${s.phase ?? "不在对局里"}(对局 ${s.matchId ?? "?"})`);
       // 离开选人(哪怕是中途退出直接回主菜单):之前「扫到选人界面」的结果作废。
       if (s.phase !== GSI_HERO_SELECTION) this.scanSawDraft = false;
+      this.nonDraftStreak = 0; // 阶段一变,上一局(可能是非 AD 模式)的「不是选人界面」计数作废
       this.lastPhase = s.phase;
       this.refreshMenu();
     }
-    if (newDraft) { this.diag(`[gsi] 新的一局(对局 ${s.matchId ?? "?"}),清空记忆`); this.onNewDraft(); }
+    if (newDraft) {
+      this.nonDraftStreak = 0;
+      this.diag(`[gsi] 新的一局(对局 ${s.matchId ?? "?"}),清空记忆`);
+      this.onNewDraft();
+    }
     this.apply();
   }
 
@@ -108,9 +114,14 @@ export class OverlayPresence {
     const mode = running ? decideOverlay(gsi, this.nonDraftStreak, this.scanSawDraft) : "silent";
     if (mode === this.mode || this.win.isDestroyed()) return;
     this.mode = mode;
-    const why = !running ? "没找到 Dota 窗口"
-      : gsi !== null
-        ? `GSI 阶段 ${gsi.phase ?? `不在对局里,看画面(最近一次扫描${this.scanSawDraft ? "是" : "不是"}选人界面)`}` : `画面判断(连续 ${this.nonDraftStreak} 次不是选人界面)`;
+    const sawText = `最近一次扫描${this.scanSawDraft ? "是" : "不是"}选人界面`;
+    let why: string;
+    if (!running) why = "没找到 Dota 窗口";
+    else if (gsi === null) why = `画面判断(连续 ${this.nonDraftStreak} 次不是选人界面)`;
+    else if (gsi.phase === null) why = `GSI 不在对局里,看画面(${sawText})`;
+    else if (gsi.phase === GSI_INIT || gsi.phase === GSI_WAIT_FOR_PLAYERS) why = `GSI 阶段 ${gsi.phase}(加载中),看画面(${sawText})`;
+    else if (gsi.phase === GSI_HERO_SELECTION && mode === "silent") why = `GSI 阶段选人,但连续 ${this.nonDraftStreak} 次扫描不是 AD 选人界面,隐藏`;
+    else why = `GSI 阶段 ${gsi.phase}`;
     this.diag(`[presence] ${mode === "active" ? "显示" : "静默"}:${why}`);
     if (mode === "silent") this.win.hide(); else this.show();
     this.refreshMenu();
