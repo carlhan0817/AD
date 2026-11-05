@@ -43,18 +43,21 @@ describe("TurnLock", () => {
     expect(t.decide(r(2, true), false)).toBe("hold");
   });
 
-  it("myPickCount 增加解锁(push),且屏幕没推进时仍 push,直到换人再回来", () => {
+  it("连选两手(蛇形头尾座位):activeRow 一直是我,选数增加即开新回合", () => {
+    const t = new TurnLock();
+    expect(t.decide(r(2, true, 3), false)).toBe("push");
+    expect(t.decide(r(2, true, 3), false)).toBe("hold");
+    expect(t.decide(r(2, true, 4), false)).toBe("push");
+    expect(t.decide(r(2, true, 4), false)).toBe("hold");
+    expect(t.decide(r(2, true, 5), false)).toBe("push");
+  });
+
+  it("选数增加时 activeRow 为 null:push,之后轮到我开新回合", () => {
     const t = new TurnLock();
     t.decide(r(2, true, 3), false);
+    expect(t.decide(r(null, true, 4), false)).toBe("push");
     expect(t.decide(r(2, true, 4), false)).toBe("push");
-    // 屏幕还没推进:activeRow 仍是我
-    expect(t.decide(r(2, true, 4), false)).toBe("push");
-    expect(t.decide(r(2, true, 5), false)).toBe("push");
-    expect(t.decide(r(null, true, 5), false)).toBe("push");
-    // 换到别人再回来才算新回合
-    expect(t.decide(r(3, true, 5), false)).toBe("push");
-    expect(t.decide(r(2, true, 5), false)).toBe("push");
-    expect(t.decide(r(2, true, 5), false)).toBe("hold");
+    expect(t.decide(r(2, true, 4), false)).toBe("hold");
   });
 
   it("activeRow 变成别人解锁,再轮到我是新回合", () => {

@@ -20,23 +20,17 @@ export class TurnLock {
   private done = false;
   /** 本回合开始时我的卡数。 */
   private turnPick = 0;
-  /** 我选完后屏幕可能还停在我这一行:等 activeRow 换到别的行之前不开新回合。 */
-  private awaitLeave = false;
 
   decide(r: TurnReading, manual: boolean): "push" | "hold" {
     if (r.myRow === null) return "push";
 
-    // 我选完了:结束本回合,屏幕没推进前一律推
-    if (this.inTurn && r.myPickCount > this.turnPick) {
-      this.endTurn();
-      this.awaitLeave = true;
-      return "push";
-    }
+    // 我选完了:结束本回合。选人是蛇形的,头尾座位会连选两手,activeRow 一直是我,
+    // 所以不等换人——往下走,若 activeRow 仍是我,这一读数就以新的选人数为基线开新回合(首次推)
+    if (this.inTurn && r.myPickCount > this.turnPick) this.endTurn();
 
     // 明确轮到别人:解锁,允许下次再轮到我时开新回合
     if (r.activeRow !== null && r.activeRow !== r.myRow) {
       this.endTurn();
-      this.awaitLeave = false;
       return "push";
     }
 
@@ -46,8 +40,6 @@ export class TurnLock {
     }
 
     // 到这里 activeRow === myRow
-    if (this.awaitLeave) return "push";
-
     if (!this.inTurn) {
       this.inTurn = true;
       this.pushed = false;
@@ -74,7 +66,6 @@ export class TurnLock {
   /** 新的一局开始时调用。 */
   reset(): void {
     this.endTurn();
-    this.awaitLeave = false;
   }
 
   private endTurn(): void {
