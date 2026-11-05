@@ -1,150 +1,150 @@
 # AD 选取助手 · Dota 2 Ability Draft Assistant
 
-> A desktop overlay that helps Dota 2 players during **Ability Draft**: it reads the draft screen from screenshots, recognizes all 48 abilities and 12 heroes in the pool, tracks what every player has taken, and recommends the best next pick for *you*, drawn as highlights directly on the game board. Read-only by design: no memory reading, no injection, no simulated input.
+**English** | [中文](README.zh-CN.md)
 
-Dota 2「技能征召」(Ability Draft,AD)模式的桌面选取助手。程序截取选人画面,认出技能池里的 48 个技能和 12 个英雄,记住每位玩家选走了什么,再按当前轮次和你已选的组合给出推荐,直接在游戏画面的技能格上框出来。
+A desktop overlay for Dota 2's **Ability Draft** (AD) mode. It captures the draft screen, recognizes all 48 abilities and 12 heroes in the pool, remembers what every player has taken, and recommends your best next pick based on the current round and what you already own, drawing the recommendations as highlights directly on the in-game board.
 
-全程只读屏幕:不读游戏内存、不注入、不模拟按键,只对自己的悬浮窗做窗口操作。
+It is read-only by design: no memory reading, no injection, no simulated input. The only window it ever modifies is its own overlay.
 
 ---
 
-## 它解决什么问题
+## The problem
 
-AD 模式里,10 名玩家轮流从一个随机池子里挑技能(5 轮、50 手,蛇形顺序),每手只有几秒钟。好的选择取决于:
+In Ability Draft, 10 players take turns picking from a random pool (5 rounds, 50 picks, snake order), with only a few seconds per pick. A good pick depends on:
 
-- 单个技能本身强不强;
-- 和你已经选到的技能、英雄搭不搭(很多强势组合远比单技能重要);
-- 现在是第几轮——前期该抢强势单技能,后期该补组合;
-- 你还缺哪类(英雄 / 普通技能 / 大招各有名额)。
+- how strong the ability is on its own;
+- how well it combines with the abilities and hero you already have (strong combos often matter far more than single abilities);
+- the current round: grab strong standalone abilities early, complete combos later;
+- what you still need (hero, regular abilities and ultimate each have fixed slots).
 
-人在几秒内很难同时算清这些。本项目把它们量化成一个可调的打分公式,每次扫描后给出前几名推荐。
+That is hard to weigh in a few seconds. This project turns it into a tunable scoring formula and shows the top recommendations after every scan.
 
-## 功能
+## Features
 
-- **整盘识别**:一次截图认出池中 48 个技能(12 大招 + 36 普通)和 12 个可选英雄,以及被选走的格子。
-- **玩家状态**:识别「我」坐哪个位置、现在轮到谁、我已选了哪个英雄和哪些技能、当前是第几轮第几手。
-- **推荐打分**:单技能胜率 + 与已选技能/英雄的搭配胜率 + 神杖/魔晶加成 + 类别缺口,权重按手数平滑过渡;技能与英雄分开推荐再合并排序。
-- **游戏内标注**:推荐直接在技能池对应格子上画框,另有右下角面板显示分数和原因。
-- **自动出现/隐藏**:接入 Valve 官方 Game State Integration(GSI),只在选人阶段显示,策略时间、游戏中、主菜单自动隐藏;没开 GSI 时退回按画面判断。
-- **权重热更新**:打分权重放在 `scoring_config.json`,改完保存,下一次扫描立即生效。
+- **Full-board recognition**: from one screenshot, identifies the 48 abilities in the pool (12 ultimates + 36 regular), the 12 available heroes, and which cells have already been taken.
+- **Player state**: detects which seat is yours, whose turn it is, your hero and abilities so far, and the current round and pick number.
+- **Pick scoring**: single-ability win rate + synergy with what you already own + Aghanim's Scepter / Shard bonuses + slot need, with weights that shift smoothly from pick to pick. Abilities and heroes are scored separately, then merged into one ranking.
+- **In-game highlights**: recommendations are outlined on the matching pool cells, with a side panel showing scores and reasons.
+- **Automatic show/hide**: uses Valve's official Game State Integration (GSI) to appear only during hero selection and hide during strategy time, in game, and in the main menu. Without GSI it falls back to judging from the screen.
+- **Hot-reloaded weights**: scoring weights live in `scoring_config.json`; save the file and the next scan uses them.
 
-## 架构
+## Architecture
 
 ```mermaid
 flowchart LR
-  subgraph Offline["离线数据流水线 (Python)"]
-    W[windrun.io 统计数据] --> DB[(reference.db<br/>技能/英雄/搭配胜率)]
-    A[Valve 游戏图标] --> IDX[图标模板与哈希索引]
+  subgraph Offline["Offline data pipeline (Python)"]
+    W[windrun.io statistics] --> DB[(reference.db<br/>ability / hero / pair win rates)]
+    A[Valve game icons] --> IDX[icon templates & hash index]
   end
 
-  subgraph Runtime["运行时 (Electron + TypeScript)"]
-    CAP[截屏<br/>desktopCapturer] --> GATE{是选人界面?}
-    GATE -- 否 --> SKIP[跳过,不写记忆]
-    GATE -- 是 --> CLF[ONNX 分类器<br/>逐格认技能]
-    CLF --> GRP[按英雄分组<br/>推出英雄身份]
-    GRP --> MEM[本局记忆<br/>已选/已走/座位]
-    MEM --> SCORE[打分内核]
+  subgraph Runtime["Runtime (Electron + TypeScript)"]
+    CAP[Screen capture<br/>desktopCapturer] --> GATE{Draft screen?}
+    GATE -- no --> SKIP[skip, memory untouched]
+    GATE -- yes --> CLF[ONNX classifier<br/>per-cell abilities]
+    CLF --> GRP[group by hero<br/>infer hero identity]
+    GRP --> MEM[draft memory<br/>picks / taken / seat]
+    MEM --> SCORE[scoring kernel]
     DB --> SCORE
-    SCORE --> UI[透明置顶悬浮窗<br/>React]
-    GSI[GSI 本机服务<br/>127.0.0.1] --> PRES[显示/静默控制]
+    SCORE --> UI[transparent topmost overlay<br/>React]
+    GSI[GSI local server<br/>127.0.0.1] --> PRES[show / hide control]
     PRES --> UI
   end
 ```
 
-### 识别:从「像素比对」到「分类器 + 规则推理」
+### Recognition: from pixel matching to classifier + reasoning
 
-早期版本用感知哈希(pHash)逐格比对图标,多轮真机测试都无法稳定认全池子。重做后的方案:
+The first version compared each cell's icon by perceptual hash (pHash). Across many real-game tests it never managed to recognize the whole pool reliably. The rework:
 
-1. **ONNX 分类器**认技能:每格裁成 96×96 RGB,送入 MobileNetV2 分类器(528 类),置信度低于 0.9 视为没认出;空格用像素方差直接判定,不进模型。图像缩放用纯 TypeScript 双线性插值实现,不依赖原生图像库。
-2. **按英雄分组推英雄**:池子里同一英雄的技能固定排在一起。3 个普通技能属于同一英雄、或 2 个普通技能加 1 个大招吻合,即可确定该英雄;只剩 2 个时再用英雄头像核对。英雄头像本身不直接识别。
-3. **本局记忆**:认出的名字不会被后续扫描覆盖;格子被选走须经玩家卡确认或连续 2 次为空才记为已走;池子大面积不一致时自动判定为新的一局。
-4. **选人界面门控**:截到主菜单、加载画面或弹窗时直接跳过,避免污染记忆。
+1. **An ONNX classifier recognizes abilities.** Each cell is cropped to 96×96 RGB and fed to a MobileNetV2 classifier (528 classes); below 0.9 confidence counts as unrecognized. Empty cells are detected by pixel variance and never reach the model. Image resizing is pure TypeScript bilinear interpolation, with no native image library.
+2. **Heroes are inferred from groups.** A hero's abilities always sit together in the pool. Three regular abilities from the same hero, or two plus a matching ultimate, identify the hero; only when two remain is the hero portrait checked. Portraits are never classified directly.
+3. **Draft memory.** Recognized names are never overwritten by later scans. A cell counts as taken only when a player card confirms it or it is empty in two consecutive scans. A large mismatch with memory is detected as a new draft.
+4. **Draft-screen gate.** Frames of the main menu, loading screens or pop-ups are skipped so they can't pollute memory.
 
-在 14 张真机截图上逐格核对 **593 / 593** 全部正确,另有多局完整对局的实测;识别回归测试会对本地保存的真机帧逐帧比对。
+Checked cell by cell on 14 real-game screenshots: **593 / 593** correct, plus several full drafts played live. A regression test replays locally saved real-game frames.
 
-### 打分
+### Scoring
 
 ```
 score = w_base(pick) · S_base
-      + w_synergy(pick) · S_synergy(与已选最配的 N 件)
+      + w_synergy(pick) · S_synergy(best N pairs with what you own)
       + w_aghs(pick) · S_aghs + w_shard(pick) · S_shard
-      + categoryNeed(pick, 缺的类别)
+      + categoryNeed(pick, missing slot types)
 ```
 
-- 权重表按 5 轮给出,在 50 手之间线性插值:单技能分逐轮下降,搭配分逐轮上升。
-- 搭配数据缺失时,按单技能强度与同类技能(按技能标签聚类)回退估计。
-- 神杖/魔晶只计高于基线的超额收益,并有叠加奖励与上限。
+- Weights are set per round (5 rounds) and interpolated across the 50 picks: the single-ability weight falls over time while the synergy weight rises.
+- When pair data is missing, synergy is estimated from the ability's own strength and from similar abilities (clustered by ability tags).
+- Scepter / Shard count only the gain above a baseline, with a stacking bonus and a cap.
 
-### 与游戏的边界(合规设计)
+### Staying on the right side of the line (compliance)
 
-这类工具最重要的是不越过「辅助」和「外挂」的界线,项目在代码层面强制执行:
+For a tool like this, the most important thing is never to cross from assistant into cheat. The code enforces it:
 
-- 只截取屏幕画面,**不读游戏内存、不注入、不 hook 渲染、不模拟键鼠**;
-- Win32 写操作(置顶、点击穿透)**只作用于自己的悬浮窗**,游戏窗口句柄在类型上被标记为只读;
-- GSI 本机服务**只监听 127.0.0.1**,校验口令;配置文件只在用户确认弹窗后写入 Dota 目录这一个文件,可随时删除;
-- `npm run compliance` 扫描全部源码,出现越界 API 即失败。
+- It only captures the screen. **No memory reading, no injection, no render hooks, no simulated keyboard or mouse input.**
+- Win32 write calls (topmost, click-through) **only target the app's own overlay**; the game window handle has a read-only type.
+- The GSI local server **listens on 127.0.0.1 only** and checks a token. Its config file is written into the Dota folder only after the user confirms a dialog, it is the only file written there, and it can be removed at any time.
+- `npm run compliance` scans all source code and fails on any out-of-bounds API.
 
-## 技术栈
+## Tech stack
 
-| 层 | 技术 |
+| Layer | Technology |
 |---|---|
-| 桌面外壳 | Electron 31 · electron-vite |
-| 界面 | React 18(透明置顶悬浮窗) |
-| 识别 | onnxruntime-node(MobileNetV2 分类器)· 纯 TS 图像处理 · pHash 作为第二意见 |
-| 系统调用 | koffi(Win32 FFI:找窗口、读客户区、改自身窗口样式) |
-| 数据 | SQLite(node-sqlite3-wasm,纯 WASM,免原生编译) |
-| 离线流水线 | Python(拉取统计数据、生成参考库与图标索引) |
-| 测试 | Vitest(约 290 个用例)· pytest |
-| 语言 | TypeScript(严格模式) |
+| Desktop shell | Electron 31 · electron-vite |
+| UI | React 18 (transparent topmost overlay) |
+| Recognition | onnxruntime-node (MobileNetV2 classifier) · pure-TS image processing · pHash as a second opinion |
+| System calls | koffi (Win32 FFI: find window, read client area, style its own window) |
+| Data | SQLite (node-sqlite3-wasm, pure WASM, no native build) |
+| Offline pipeline | Python (fetches statistics, builds the reference DB and icon index) |
+| Tests | Vitest (~290 tests) · pytest |
+| Language | TypeScript (strict) |
 
-## 仓库结构
+## Repository layout
 
 ```
-shared/     共享类型(选人状态、推荐、IPC 消息)
-core/       纯逻辑,不依赖 Electron:识别、记忆、打分、GSI 解析
-main/       主进程侧能力:截屏、Win32 FFI、GSI 本机服务、Dota 路径查找
-renderer/   React 悬浮窗界面
-app/        Electron 入口,把以上各层接起来
-pipeline/   Python 离线数据流水线
-models/     分类器模型、图标模板、技能标签
-scripts/    合规扫描
-docs/       各阶段设计与实施方案
+shared/     shared types (draft state, recommendations, IPC messages)
+core/       pure logic, no Electron: recognition, memory, scoring, GSI parsing
+main/       main-process capabilities: capture, Win32 FFI, GSI server, Dota path lookup
+renderer/   React overlay UI
+app/        Electron entry point that wires the layers together
+pipeline/   Python offline data pipeline
+models/     classifier model, icon templates, ability tags
+scripts/    compliance scan
+docs/       design and implementation plans for each phase
 ```
 
-`core` 不依赖 Electron,所以识别和打分都能在普通 Node 环境下直接测试。
+`core` has no Electron dependency, so recognition and scoring are tested in plain Node.
 
-## 运行
+## Running
 
-需要 Windows、Node.js(开发时用 22);Dota 2 以无边框窗口模式运行。
+Requires Windows and Node.js (developed on 22), with Dota 2 in borderless window mode.
 
 ```bash
-npm install          # 安装所有 workspace 依赖
-npm run test:ts      # 运行全部 TypeScript 测试
-npm run compliance   # 合规红线扫描
-npm run dev          # 启动悬浮窗
+npm install          # install all workspace dependencies
+npm run test:ts      # run all TypeScript tests
+npm run compliance   # compliance red-line scan
+npm run dev          # start the overlay
 ```
 
-在选人界面按 `Ctrl+Shift+S` 扫描一次。托盘菜单里可以启用 GSI(启用后需重启 Dota 一次)。
+Press `Ctrl+Shift+S` on the draft screen to scan. GSI can be enabled from the tray menu (restart Dota once afterwards).
 
-## 开发过程
+## How it was built
 
-项目按阶段推进,每一阶段先写方案、再测试驱动实现、最后真机验证,方案文档都在 [`docs/superpowers/plans/`](docs/superpowers/plans/)。几个关键的转折:
+The project moved in phases: write a plan, implement test-first, then verify on the real game. All plans are in [`docs/superpowers/plans/`](docs/superpowers/plans/) (in Chinese). Some turning points:
 
-- **布局重标**:最初假设玩家是十行排列,真机发现是左右两列各 5 人、技能池分大招区和普通区,整体重做坐标体系。
-- **识别重做**:pHash 方案在真机上反复失败,改用分类器 + 按组推理,准确率从「无法认全」到逐格全对。
-- **真机问题驱动**:例如 125% 系统缩放导致悬浮窗尺寸错误、截到主菜单污染记忆、高对比英雄头像被误判为已选——每个都先定位原因、补测试,再修复。
+- **Re-mapping the layout.** The first design assumed ten rows of players; the real screen has two columns of five and a pool split into ultimate and regular zones, so the coordinate system was redone.
+- **Rebuilding recognition.** pHash kept failing in real games; switching to a classifier plus group reasoning went from "can't recognize the whole pool" to every cell correct.
+- **Driven by real-game bugs.** For example, 125% Windows scaling sizing the overlay wrong, main-menu frames polluting memory, and high-contrast hero portraits being misread as taken. Each was traced to its cause and covered by a test before being fixed.
 
-## 现状与计划
+## Status and roadmap
 
-- [x] 整盘识别、玩家状态、推荐打分、游戏内标注
-- [x] GSI 自动显示/隐藏、换局自动清空
-- [ ] 选人阶段自动扫描(去掉热键)
-- [ ] 用完整对局记录调优权重
-- [ ] 安装包与首次启动引导
-- [ ] 支持 1920×1080 以外的分辨率
+- [x] Full-board recognition, player state, pick scoring, in-game highlights
+- [x] GSI automatic show/hide, memory reset on a new draft
+- [ ] Automatic scanning during the draft (no hotkey)
+- [ ] Tune weights from full draft logs
+- [ ] Installer and first-run setup
+- [ ] Resolutions other than 1920×1080
 
-## 致谢
+## Credits
 
-- 技能分类器模型来自 [ability-draft-plus](https://github.com/Tiarin-Hino/ability-draft-plus)(ISC License,见 `models/classifier/LICENSE-ability-draft-plus.txt`)。
-- 技能与搭配胜率数据来自 [windrun.io](https://windrun.io)。
-- Dota 2 及其游戏素材归 Valve Corporation 所有,本项目与 Valve 无关。
+- The ability classifier model comes from [ability-draft-plus](https://github.com/Tiarin-Hino/ability-draft-plus) (ISC License, see `models/classifier/LICENSE-ability-draft-plus.txt`).
+- Ability and synergy win-rate data comes from [windrun.io](https://windrun.io).
+- Dota 2 and its game assets are property of Valve Corporation. This project is not affiliated with Valve.
