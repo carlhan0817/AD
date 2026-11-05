@@ -33,6 +33,11 @@ export function parseGsi(payload: unknown): GsiState {
 
 export const GSI_HERO_SELECTION = "DOTA_GAMERULES_STATE_HERO_SELECTION";
 export const GSI_POST_GAME = "DOTA_GAMERULES_STATE_POST_GAME";
+export const GSI_INIT = "DOTA_GAMERULES_STATE_INIT";
+export const GSI_WAIT_FOR_PLAYERS = "DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD";
+
+/** 开着 GSI 时允许自动截图的阶段:只有这三个,其他阶段一张不截。 */
+export const AUTO_SCAN_PHASES: ReadonlySet<string> = new Set([GSI_INIT, GSI_WAIT_FOR_PLAYERS, GSI_HERO_SELECTION]);
 
 /** 悬浮窗该显示(选人中)还是静默(其他所有阶段,包括主菜单)。 */
 export function overlayModeFor(phase: string | null): "active" | "silent" {
