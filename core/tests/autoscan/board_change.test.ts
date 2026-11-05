@@ -93,10 +93,28 @@ describe("SettleGate(放行原因 first / settled / timeout)", () => {
   paint(f2, c2.x, c2.y, c2.x + c2.w, c2.y + c2.h, [0, 0, 0]);
   const C = boardSignature(f2, RECT);
 
-  it("首帧放行,没变化不再放行", () => {
+  it("首帧放行(first);之后同一画面再连续 2 次 → 再放行一次 settled(首帧不写记忆,要补一次能写的);之后不再放行", () => {
     const g = new SettleGate();
     expect(g.push(A, 0)).toBe("first");
     expect(g.push(A, 1000)).toBeNull();
+    expect(g.push(A, 2000)).toBe("settled");
+    expect(g.push(A, 3000)).toBeNull();
+    expect(g.push(A, 9000)).toBeNull();
+  });
+
+  it("首帧后画面没变但隔了很久才有下一帧:不算超时,照样等静止", () => {
+    const g = new SettleGate();
+    g.push(A, 0);
+    expect(g.push(A, 5000)).toBeNull();
+    expect(g.push(A, 6000)).toBe("settled");
+  });
+
+  it("首帧后马上变化:超时从变化开始算,不从首帧算", () => {
+    const g = new SettleGate();
+    g.push(A, 0);
+    expect(g.push(B, 2500)).toBeNull();
+    expect(g.push(C, 3500)).toBeNull(); // 若从首帧算,这里就超时了
+    expect(g.push(B, 5500)).toBe("timeout");
   });
 
   it("变化后同一签名连续再推 2 次,第 2 次放行,且只放行一次", () => {

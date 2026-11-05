@@ -84,29 +84,40 @@ export type SettleRelease = "first" | "settled" | "timeout";
 
 /** 「等画面静止再识别」的闸门。push 返回放行原因表示现在该识别了,null = 先别识别。
  *  首帧放行;画面变了开始计时,变化后同一画面再连续出现 settleFrames 次 → 放行;
- *  从变化开始满 maxWaitMs 还没静止 → 也放行并重新计时。每段变化的静止放行只一次。 */
+ *  从变化开始满 maxWaitMs 还没静止 → 也放行并重新计时。每段变化的静止放行只一次。
+ *  首帧之后也等一次静止:画面一直没变,再连续 settleFrames 次后放行一次 settled(首帧读数不写记忆,
+ *  这一次补上能写的);首帧后马上变化,就当普通变化处理,超时从变化开始算。 */
 export class SettleGate {
   private last: BoardSignature | null = null;
   // 超时放行后计时重新开始:画面之后静止时会再放行一次,读到强制读取之后的最终局面。
   private pendingSince: number | null = null; // 当前这段变化的计时起点;null = 没有待识别的变化
   private stable = 0;
+  /** 正在等的是「首帧之后的静止」(还没出现变化)。 */
+  private afterFirst = false;
 
   constructor(private readonly settleFrames = 2, private readonly maxWaitMs = 3000) {}
 
   push(sig: BoardSignature, now: number): SettleRelease | null {
     const prev = this.last;
     this.last = sig;
-    if (prev === null) return "first";
+    if (prev === null) {
+      this.pendingSince = now;
+      this.stable = 0;
+      this.afterFirst = true;
+      return "first";
+    }
 
     if (boardChanged(prev, sig)) {
       this.stable = 0;
-      if (this.pendingSince === null) this.pendingSince = now;
+      if (this.pendingSince === null || this.afterFirst) this.pendingSince = now;
+      this.afterFirst = false;
     } else if (this.pendingSince !== null) {
       this.stable++;
-      if (this.stable >= this.settleFrames) { this.pendingSince = null; this.stable = 0; return "settled"; }
+      if (this.stable >= this.settleFrames) { this.pendingSince = null; this.stable = 0; this.afterFirst = false; return "settled"; }
     }
 
-    if (this.pendingSince !== null && now >= this.pendingSince + this.maxWaitMs) {
+    // 首帧之后画面没变过:不存在「一直在变」,不走超时(取帧中途停过很久也只等静止)
+    if (this.pendingSince !== null && !this.afterFirst && now >= this.pendingSince + this.maxWaitMs) {
       this.pendingSince = now; // 仍在变:放行一次,从现在重新计时
       this.stable = 0;
       return "timeout";
