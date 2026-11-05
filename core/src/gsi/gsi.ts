@@ -117,13 +117,20 @@ export class GsiTracker {
 export const FALLBACK_SILENT_AFTER = 2;
 
 /** 决定悬浮窗该不该显示。
- *  - GSI 报了明确阶段:以 GSI 为准(选人显示,其余静默)。
- *  - GSI 报「不在对局里」:GSI 比画面慢几秒,选人刚开始时还是这个状态,所以改看画面——
- *    最近一次扫描确认是选人界面才显示(scanSawDraft),否则静默(主菜单过不了选人界面检查)。
+ *  - GSI 报「不在对局里」/ INIT / WAIT_FOR_PLAYERS(加载中):GSI 比画面慢几秒或根本没有选人信息,
+ *    所以改看画面——最近一次扫描确认是选人界面才显示(scanSawDraft),否则静默。
+ *  - GSI 报 HERO_SELECTION:显示;但连续几次扫描都不是 AD 选人界面(非 AD 模式)就隐藏。
+ *  - GSI 报其他阶段:静默。
  *  - 没有 GSI:连续几次扫描不是选人界面才静默。 */
 export function decideOverlay(
   gsi: GsiState | null, nonDraftStreak: number, scanSawDraft: boolean,
 ): "active" | "silent" {
-  if (gsi !== null) return gsi.phase === null ? (scanSawDraft ? "active" : "silent") : overlayModeFor(gsi.phase);
+  if (gsi !== null) {
+    if (gsi.phase === null || gsi.phase === GSI_INIT || gsi.phase === GSI_WAIT_FOR_PLAYERS) {
+      return scanSawDraft ? "active" : "silent";
+    }
+    if (gsi.phase === GSI_HERO_SELECTION) return nonDraftStreak >= FALLBACK_SILENT_AFTER ? "silent" : "active";
+    return "silent";
+  }
   return nonDraftStreak >= FALLBACK_SILENT_AFTER ? "silent" : "active";
 }

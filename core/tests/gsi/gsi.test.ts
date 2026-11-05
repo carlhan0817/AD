@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseGsi, tokenOf, buildGsiCfg, parseGsiCfg, overlayModeFor, decideOverlay, GsiTracker,
-  GSI_STALE_MS, GSI_HERO_SELECTION, FALLBACK_SILENT_AFTER,
+  GSI_STALE_MS, GSI_HERO_SELECTION, GSI_INIT, GSI_WAIT_FOR_PLAYERS, FALLBACK_SILENT_AFTER,
 } from "../../src/gsi/gsi";
 
 // 结构与上游 ability-draft-plus 的真实抓包样本一致(只保留用到的字段)。
@@ -55,7 +55,8 @@ describe("显示还是静默", () => {
   it("有 GSI 以 GSI 为准;没有时连续 2 次不是选人界面才静默", () => {
     const inGame = { phase: "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS", matchId: "1", clock: 90 };
     expect(decideOverlay(inGame, 0, true)).toBe("silent");
-    expect(decideOverlay({ ...inGame, phase: GSI_HERO_SELECTION }, 5, false)).toBe("active");
+    // 这条有意改了:GSI 说在选人但连续 2 次扫描都不是 AD 选人界面(非 AD 模式)→ 隐藏。
+    expect(decideOverlay({ ...inGame, phase: GSI_HERO_SELECTION }, 5, false)).toBe("silent");
     expect(decideOverlay(null, FALLBACK_SILENT_AFTER - 1, false)).toBe("active");
     expect(decideOverlay(null, FALLBACK_SILENT_AFTER, false)).toBe("silent");
   });
@@ -63,6 +64,16 @@ describe("显示还是静默", () => {
     const menu = { phase: null, matchId: null, clock: null };
     expect(decideOverlay(menu, 0, true)).toBe("active");
     expect(decideOverlay(menu, 0, false)).toBe("silent");
+  });
+  it("INIT / WAIT_FOR_PLAYERS 同样看画面;HERO_SELECTION 看连续不是选人界面的次数", () => {
+    const at = (phase: string) => ({ phase, matchId: "1", clock: 0 });
+    expect(decideOverlay(at(GSI_INIT), 0, true)).toBe("active");
+    expect(decideOverlay(at(GSI_INIT), 0, false)).toBe("silent");
+    expect(decideOverlay(at(GSI_WAIT_FOR_PLAYERS), 0, false)).toBe("silent");
+    expect(decideOverlay(at(GSI_WAIT_FOR_PLAYERS), 0, true)).toBe("active");
+    expect(decideOverlay(at(GSI_HERO_SELECTION), 2, false)).toBe("silent");
+    expect(decideOverlay(at(GSI_HERO_SELECTION), 1, false)).toBe("active");
+    expect(decideOverlay(at(GSI_HERO_SELECTION), 0, false)).toBe("active");
   });
 });
 
