@@ -63,6 +63,18 @@ describe("boardChanged", () => {
     expect(boardChanged(a, b)).toBe(false);
   });
 
+  it("卡上已选格出现图标算变化,只是金色卡底出现/消失不算", () => {
+    const base = gray(0);
+    const slot = cardSlots(RECT)[5];
+    const withIcon = gray(0);
+    paint(withIcon, slot.x, slot.y, slot.x + slot.w, slot.y + slot.h, [200, 180, 60]);
+    expect(boardChanged(boardSignature(base, RECT), boardSignature(withIcon, RECT))).toBe(true);
+    // 金卡时空格里透出的暖色(真机约 (16,13,4),原本接近黑)
+    const gold = gray(0);
+    paint(gold, slot.x, slot.y, slot.x + slot.w, slot.y + slot.h, [16, 13, 4]);
+    expect(boardChanged(boardSignature(base, RECT), boardSignature(gold, RECT))).toBe(false);
+  });
+
   it("activeRow:3→4 算变化;3→null 不算", () => {
     expect(boardChanged(sigWith(3), sigWith(4))).toBe(true);
     expect(boardChanged(sigWith(3), sigWith(null))).toBe(false);
@@ -109,6 +121,18 @@ describe("SettleGate", () => {
     expect(g.push(C, 5000)).toBe(false);
     expect(g.push(B, 5900)).toBe(false);
     expect(g.push(C, 6000)).toBe(true);
+  });
+
+  it("超时放行后画面静止,再放行一次(读最终局面),之后不再放行", () => {
+    const g = new SettleGate();
+    g.push(A, 0);
+    expect(g.push(B, 0)).toBe(false);
+    expect(g.push(C, 1500)).toBe(false);
+    expect(g.push(B, 3000)).toBe(true);   // 超时强制放行
+    expect(g.push(B, 4000)).toBe(false);
+    expect(g.push(B, 5000)).toBe(true);   // 静止 2 帧,再放行一次
+    expect(g.push(B, 6000)).toBe(false);
+    expect(g.push(B, 7000)).toBe(false);
   });
 
   it("放行后又一段新变化,静止后再放行一次", () => {

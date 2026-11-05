@@ -15,9 +15,9 @@ const PER_REGION = GRID * GRID;
 
 /** 区域平均绝对差(0–255 亮度)超过它就算「这个区域变了」。
  *  依据(真机帧实测,见 main/tests/capture/board_change_frames.test.ts):
- *  同一刻的截图 vs 视频流帧(颜色偏差)任一区域最大差 3.09;
- *  真实换手(池格/英雄格被选走)的区域差最小约 13,多数 30 以上。取 8:约 2.6 倍噪声余量,仍在最小真变化之下。 */
-export const BOARD_CHANGE_THRESHOLD = 8;
+ *  截图 vs 视频流同一刻(颜色偏差)任一区域最大差 3.89;同局面相邻帧(含金卡出现/消失)最大 7.52;
+ *  真实换手(池格/英雄格被选走)区域差最小约 13,多数 30 以上。取 10,夹在 7.52 与 13 之间。 */
+export const BOARD_CHANGE_THRESHOLD = 10;
 
 export interface BoardSignature {
   /** 每区域 16 个值,顺序固定:池格(48)→ 英雄格(12)→ 卡上已选格。 */
@@ -25,12 +25,23 @@ export interface BoardSignature {
   activeRow: number | null;
 }
 
-function regions(rect: ClientRect): Rect[] {
-  return [...poolSlots(rect), ...heroCellRects(rect), ...cardSlots(rect)];
+/** 卡上已选格只比蓝通道:「轮到谁」的金色卡底会从空格里透出来(空格本是黑的,金卡时变成约
+ *  (15,12,4)),三通道平均差约 10-12,蓝通道只差约 4-5;而放上技能图标后蓝通道差远大于此。
+ *  金卡出现/消失本身不该算画面变化(见 main/tests/capture/board_change_frames.test.ts)。 */
+const BLUE = 2;
+
+interface Region { rect: Rect; channel: number } // channel: -1 = 三通道平均
+
+function regions(rect: ClientRect): Region[] {
+  return [
+    ...poolSlots(rect).map((r) => ({ rect: r as Rect, channel: -1 })),
+    ...heroCellRects(rect).map((r) => ({ rect: r as Rect, channel: -1 })),
+    ...cardSlots(rect).map((r) => ({ rect: r as Rect, channel: BLUE })),
+  ];
 }
 
 /** 一个区域缩成 4×4 的平均亮度(三通道平均),写进 out[off..off+16)。越界部分按帧边缘裁掉。 */
-function blockMeans(frame: RgbFrame, r: Rect, out: Float32Array, off: number): void {
+function blockMeans(frame: RgbFrame, r: Rect, channel: number, out: Float32Array, off: number): void {
   const { width, height, data } = frame;
   for (let by = 0; by < GRID; by++) {
     const y0 = Math.max(0, r.y + Math.floor((by * r.h) / GRID));
@@ -41,9 +52,9 @@ function blockMeans(frame: RgbFrame, r: Rect, out: Float32Array, off: number): v
       let sum = 0, n = 0;
       for (let y = y0; y < y1; y++) {
         let i = (y * width + x0) * 3;
-        for (let x = x0; x < x1; x++, i += 3) { sum += data[i] + data[i + 1] + data[i + 2]; n++; }
+        for (let x = x0; x < x1; x++, i += 3) { sum += channel < 0 ? (data[i] + data[i + 1] + data[i + 2]) / 3 : data[i + channel]; n++; }
       }
-      out[off + by * GRID + bx] = n === 0 ? 0 : sum / (3 * n);
+      out[off + by * GRID + bx] = n === 0 ? 0 : sum / n;
     }
   }
 }
@@ -51,7 +62,7 @@ function blockMeans(frame: RgbFrame, r: Rect, out: Float32Array, off: number): v
 export function boardSignature(frame: RgbFrame, rect: ClientRect): BoardSignature {
   const rs = regions(rect);
   const cells = new Float32Array(rs.length * PER_REGION);
-  rs.forEach((r, i) => blockMeans(frame, r, cells, i * PER_REGION));
+  rs.forEach((r, i) => blockMeans(frame, r.rect, r.channel, cells, i * PER_REGION));
   return { cells, activeRow: findActiveRow(frame, rect) };
 }
 
@@ -72,6 +83,7 @@ export function boardChanged(a: BoardSignature, b: BoardSignature): boolean {
  *  从变化开始满 maxWaitMs 还没静止 → 也放行并重新计时。每段变化的静止放行只一次。 */
 export class SettleGate {
   private last: BoardSignature | null = null;
+  // 超时放行后计时重新开始:画面之后静止时会再放行一次,读到强制读取之后的最终局面。
   private pendingSince: number | null = null; // 当前这段变化的计时起点;null = 没有待识别的变化
   private stable = 0;
 

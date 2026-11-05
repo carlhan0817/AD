@@ -100,9 +100,6 @@ describe.skipIf(!hasAssets)("运行时真帧:画面变化检测", () => {
       const a = draft[i - 1], b = draft[i];
       const d = maxRegionDiff(a.sig, b.sig);
       if (a.key === b.key) {
-        // 「轮到谁」的金色卡出现/消失时,金底会从卡上已选格的边缘透出来(区域差约 10–12),
-        // 这是真实的画面变化(轮次换了),不当作「同一局面」。
-        if ((a.sig.activeRow === null) !== (b.sig.activeRow === null)) continue;
         same++; maxSame = Math.max(maxSame, d);
         expect([a.name, b.name, boardChanged(a.sig, b.sig)]).toEqual([a.name, b.name, false]);
       } else {
