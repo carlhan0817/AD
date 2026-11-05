@@ -82,7 +82,7 @@ describe("boardChanged", () => {
   });
 });
 
-describe("SettleGate", () => {
+describe("SettleGate(放行原因 first / settled / timeout)", () => {
   const A = sigWith(null);
   const f = gray();
   const c = poolSlots(RECT)[0];
@@ -95,52 +95,52 @@ describe("SettleGate", () => {
 
   it("首帧放行,没变化不再放行", () => {
     const g = new SettleGate();
-    expect(g.push(A, 0)).toBe(true);
-    expect(g.push(A, 1000)).toBe(false);
+    expect(g.push(A, 0)).toBe("first");
+    expect(g.push(A, 1000)).toBeNull();
   });
 
   it("变化后同一签名连续再推 2 次,第 2 次放行,且只放行一次", () => {
     const g = new SettleGate();
     g.push(A, 0);
-    expect(g.push(B, 1000)).toBe(false);
-    expect(g.push(B, 2000)).toBe(false);
-    expect(g.push(B, 3000)).toBe(true);
-    expect(g.push(B, 4000)).toBe(false);
-    expect(g.push(B, 5000)).toBe(false);
+    expect(g.push(B, 1000)).toBeNull();
+    expect(g.push(B, 2000)).toBeNull();
+    expect(g.push(B, 3000)).toBe("settled");
+    expect(g.push(B, 4000)).toBeNull();
+    expect(g.push(B, 5000)).toBeNull();
   });
 
   it("一直在变:从变化开始满 3000ms 放行并重新计时", () => {
     const g = new SettleGate();
     g.push(A, 0);
-    expect(g.push(B, 0)).toBe(false);   // 变化开始于 now=0
-    expect(g.push(C, 1000)).toBe(false);
-    expect(g.push(B, 2000)).toBe(false);
-    expect(g.push(C, 3000)).toBe(true);
+    expect(g.push(B, 0)).toBeNull();   // 变化开始于 now=0
+    expect(g.push(C, 1000)).toBeNull();
+    expect(g.push(B, 2000)).toBeNull();
+    expect(g.push(C, 3000)).toBe("timeout");
     // 重新计时:再变一次要从这之后再等 3000
-    expect(g.push(B, 3500)).toBe(false);
-    expect(g.push(C, 5000)).toBe(false);
-    expect(g.push(B, 5900)).toBe(false);
-    expect(g.push(C, 6000)).toBe(true);
+    expect(g.push(B, 3500)).toBeNull();
+    expect(g.push(C, 5000)).toBeNull();
+    expect(g.push(B, 5900)).toBeNull();
+    expect(g.push(C, 6000)).toBe("timeout");
   });
 
   it("超时放行后画面静止,再放行一次(读最终局面),之后不再放行", () => {
     const g = new SettleGate();
     g.push(A, 0);
-    expect(g.push(B, 0)).toBe(false);
-    expect(g.push(C, 1500)).toBe(false);
-    expect(g.push(B, 3000)).toBe(true);   // 超时强制放行
-    expect(g.push(B, 4000)).toBe(false);
-    expect(g.push(B, 5000)).toBe(true);   // 静止 2 帧,再放行一次
-    expect(g.push(B, 6000)).toBe(false);
-    expect(g.push(B, 7000)).toBe(false);
+    expect(g.push(B, 0)).toBeNull();
+    expect(g.push(C, 1500)).toBeNull();
+    expect(g.push(B, 3000)).toBe("timeout");   // 超时强制放行
+    expect(g.push(B, 4000)).toBeNull();
+    expect(g.push(B, 5000)).toBe("settled");   // 静止 2 帧,再放行一次
+    expect(g.push(B, 6000)).toBeNull();
+    expect(g.push(B, 7000)).toBeNull();
   });
 
   it("放行后又一段新变化,静止后再放行一次", () => {
     const g = new SettleGate();
     g.push(A, 0);
     g.push(B, 1000); g.push(B, 2000); g.push(B, 3000);
-    expect(g.push(C, 4000)).toBe(false);
-    expect(g.push(C, 5000)).toBe(false);
-    expect(g.push(C, 6000)).toBe(true);
+    expect(g.push(C, 4000)).toBeNull();
+    expect(g.push(C, 5000)).toBeNull();
+    expect(g.push(C, 6000)).toBe("settled");
   });
 });

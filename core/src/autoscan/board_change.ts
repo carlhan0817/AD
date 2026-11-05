@@ -78,7 +78,11 @@ export function boardChanged(a: BoardSignature, b: BoardSignature): boolean {
   return false;
 }
 
-/** 「等画面静止再识别」的闸门。push 返回 true 表示现在该识别了。
+/** 放行原因:first = 首帧;settled = 变化后已静止;timeout = 满 maxWaitMs 还在变,照样放行。
+ *  调用方据此决定读数能不能写进本局记忆(只有 settled 的画面才可靠)。 */
+export type SettleRelease = "first" | "settled" | "timeout";
+
+/** 「等画面静止再识别」的闸门。push 返回放行原因表示现在该识别了,null = 先别识别。
  *  首帧放行;画面变了开始计时,变化后同一画面再连续出现 settleFrames 次 → 放行;
  *  从变化开始满 maxWaitMs 还没静止 → 也放行并重新计时。每段变化的静止放行只一次。 */
 export class SettleGate {
@@ -89,24 +93,24 @@ export class SettleGate {
 
   constructor(private readonly settleFrames = 2, private readonly maxWaitMs = 3000) {}
 
-  push(sig: BoardSignature, now: number): boolean {
+  push(sig: BoardSignature, now: number): SettleRelease | null {
     const prev = this.last;
     this.last = sig;
-    if (prev === null) return true;
+    if (prev === null) return "first";
 
     if (boardChanged(prev, sig)) {
       this.stable = 0;
       if (this.pendingSince === null) this.pendingSince = now;
     } else if (this.pendingSince !== null) {
       this.stable++;
-      if (this.stable >= this.settleFrames) { this.pendingSince = null; this.stable = 0; return true; }
+      if (this.stable >= this.settleFrames) { this.pendingSince = null; this.stable = 0; return "settled"; }
     }
 
     if (this.pendingSince !== null && now >= this.pendingSince + this.maxWaitMs) {
       this.pendingSince = now; // 仍在变:放行一次,从现在重新计时
       this.stable = 0;
-      return true;
+      return "timeout";
     }
-    return false;
+    return null;
   }
 }

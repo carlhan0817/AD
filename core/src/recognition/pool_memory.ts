@@ -53,6 +53,20 @@ export class PoolMemory {
     return this.heroes.get(heroPos) ?? null;
   }
 
+  /** 深拷贝一份(只拷数据,不改任何规则)。没静止的画面先在副本上试读,不写进本局记忆。 */
+  clone(): PoolMemory {
+    const c = new PoolMemory();
+    c.names = [...this.names];
+    c.heroes = new Map(this.heroes);
+    c.gone = [...this.gone];
+    c.taken = new Set(this.taken);
+    c.me = this.me;
+    c.myHero = this.myHero;
+    c.seat = this.seat;
+    c.emptySeen = [...this.emptySeen];
+    return c;
+  }
+
   reset(): void {
     this.names = [];
     this.heroes = new Map();

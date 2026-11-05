@@ -186,3 +186,33 @@ describe("PoolMemory — 满池认一次并记住", () => {
     expect([...s.takenHeroes]).toEqual([5]);
   });
 });
+
+describe("PoolMemory.clone — 试读用的副本", () => {
+  const full = () => resolvePool(
+    [cell(0, 0, "7_u"), cell(0, 1, "7_a"), cell(0, 2, "7_b"), cell(0, 3, null, "99_x")], { ownerOf });
+  const later = () => resolvePool(
+    [cell(0, 0, "7_u"), EMPTY(0, 1), cell(0, 2, "7_b"), cell(0, 3, "99_x")], { ownerOf });
+
+  it("副本带着原记忆(名字、英雄、我坐哪、选位、已选英雄),结果和原记忆一样", () => {
+    const m = new PoolMemory();
+    m.observe(full(), [4]);
+    m.rememberMyRow(2); m.rememberMySeat(3); m.rememberMyHero(14);
+    const c = m.clone();
+    expect([c.myRow, c.mySeat, c.myHeroId, c.knownHero(0)]).toEqual([2, 3, 14, 7]);
+    expect(c.observe(later(), [5])).toEqual(m.clone().observe(later(), [5]));
+  });
+
+  it("往副本里并入读数不影响原记忆", () => {
+    const m = new PoolMemory();
+    m.observe(full(), [4]);
+    const c = m.clone();
+    c.observe(later(), [5]);
+    c.observe(later(), [5]); // 连续两次空,副本里算选走
+    c.rememberMyRow(6);
+    const s = m.observe(full());
+    expect(s.names[3]).toBeNull();
+    expect(s.available).toEqual([true, true, true, true]);
+    expect([...s.takenHeroes]).toEqual([4]);
+    expect(m.myRow).toBeNull();
+  });
+});
