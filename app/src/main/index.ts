@@ -1,7 +1,9 @@
 // app/src/main/index.ts
 // Electron 主进程:建透明置顶 overlay 窗口 + 数据源 + IPC 推送。
-// 默认数据源 = 手动扫描(按 Ctrl+Shift+S 扫一次):新识别层 scanPool(分类器认技能 →
-// 按组定英雄 → 本局记忆 → 打分),见 docs/superpowers/plans/2026-10-03-recognition-rework.md。
+// 默认数据源 = 扫描:新识别层 scanPool(分类器认技能 → 按组定英雄 → 本局记忆 → 打分),
+// 见 docs/superpowers/plans/2026-10-03-recognition-rework.md。两种触发共用一个 scan():
+// 热键 Ctrl+Shift+S 随时扫一次;自动扫描(auto_scan.ts,托盘可关)在选人阶段画面变了就扫,
+// 见 docs/superpowers/specs/2026-11-05-auto-scan-design.md。
 // 连续监控(LiveSnapshotSource 包装 runMonitorLoop)是保留资产,设 AD_MONITOR_LOOP=1 才启用;
 // 它仍有已知限制:候选池为空、玩家卡布局是占位。
 // 启动时探测游戏窗口/显示模式,定位 overlay 到客户区,独占全屏时只发引导文案(不强攻)。
@@ -21,19 +23,22 @@ function diag(msg: string): void {
 import { OVERLAY_CHANNEL, type OverlaySnapshot } from "@ad/shared/types/ipc";
 import { LiveSnapshotSource, type LiveDeps } from "./live_snapshot_source";
 import { OverlayPresence } from "./presence";
-import { startWatchSpike } from "./watch_spike";
+import { startAutoScan, turnReadingOf, type Frames } from "./auto_scan";
 import { guideMessageFor } from "./display_mode_guide";
 import { setOverlayClickThrough, raiseOverlayZOrder } from "@ad/main/ffi/overlay_window_ctl";
-import { findGameWindow, gameClientRect } from "@ad/main/ffi/game_window";
+import { findGameWindow, gameClientRect, isGameForeground } from "@ad/main/ffi/game_window";
 import { detectDisplayMode } from "@ad/main/ffi/display_mode";
 import { rectToOverlayBounds, type WindowRect } from "@ad/main/ffi/geometry";
 import { runMonitorLoop, type MonitorDeps } from "@ad/main/capture/loop";
-import { scanPool, type PoolScanDeps } from "@ad/main/capture/scan_pool";
+import { scanPool, type PoolScanDeps, type PoolScanResult } from "@ad/main/capture/scan_pool";
+import { FrameStore } from "@ad/main/capture/frame_store";
 import { captureScreenFrames, physicalScreenSize, primaryScreenSourceId } from "@ad/main/capture/screen_source";
 import { rawToFrames } from "@ad/main/decode";
 import { loadIndex, type IndexEntry } from "@ad/core/recognition/index_store";
 import { loadClassifier } from "@ad/core/recognition/classifier";
 import { PoolMemory } from "@ad/core/recognition/pool_memory";
+import { AutoScanSchedule } from "@ad/core/autoscan/schedule";
+import { TurnLock } from "@ad/core/autoscan/turn_lock";
 import { portraitVariants } from "@ad/core/recognition/hero_portrait";
 import { remainingQuota } from "@ad/core/statemachine/quota";
 import { buildAbilityLookup } from "@ad/core/db/ability_lookup";
@@ -77,11 +82,15 @@ function currentGameRect(): WindowRect {
   return (hwnd ? gameClientRect(hwnd) : null) ?? FALLBACK_RECT;
 }
 
-/** 把扫描用的那一帧存成 PNG(app/.scan_frames/,不入库),以后可以拿运行时的真帧补进标准答案。
- *  截图里有别的玩家名字,只留在本机。存失败只记日志,不影响扫描。 */
+/** 截帧存放处(app/.scan_frames/,不入库),以后可以拿运行时的真帧补进标准答案。
+ *  截图里有别的玩家名字,只留在本机。 */
+function scanFramesDir(): string { return join(app.getAppPath(), ".scan_frames"); }
+
+/** 对比模式用:把那一帧直接存成 PNG(散放在 .scan_frames/ 下,不分局)。存失败只记日志。
+ *  正式扫描的帧改由 FrameStore 按局存。 */
 async function saveScanFrame(rgb: { width: number; height: number; data: Uint8Array }, n: number): Promise<void> {
   try {
-    const dir = join(app.getAppPath(), ".scan_frames");
+    const dir = scanFramesDir();
     mkdirSync(dir, { recursive: true });
     const file = join(dir, `scan_${new Date().toISOString().replace(/[:.]/g, "-")}_${n}.png`);
     await sharp(Buffer.from(rgb.data), { raw: { width: rgb.width, height: rgb.height, channels: 3 } }).png().toFile(file);
@@ -91,9 +100,10 @@ async function saveScanFrame(rgb: { width: number; height: number; data: Uint8Ar
   }
 }
 
-// 可选的「持续屏幕画面流」截图(设 AD_STREAM_CAPTURE=1 启用,取帧在 preload 里做)。
+// 「持续屏幕画面流」截图(默认开,设 AD_NO_STREAM_CAPTURE=1 才关;取帧在 preload 里做)。
+// 普通截图每次整屏抓一遍,真机上每次都让游戏顿一下;画面流一直开着,取帧只是拿一张,不卡。
 // 失败、超时、尺寸不对都返回 null,由调用方退回普通截图。
-const STREAM_CAPTURE = !!process.env.AD_STREAM_CAPTURE;
+const STREAM_CAPTURE = !process.env.AD_NO_STREAM_CAPTURE;
 // 对比模式(设 AD_CAPTURE_COMPARE=1):热键那次同时用画面流和普通截图各取一帧,各自用全新的记忆识别,
 // 逐项对比写进日志,不写正式记忆、不推悬浮窗。用来决定识别能不能用画面流(画面流颜色有小偏差)。
 const CAPTURE_COMPARE = !!process.env.AD_CAPTURE_COMPARE;
@@ -170,6 +180,8 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
       catch (err) { diag(`[scan] scoring_config.json 读取失败,用默认权重: ${err}`); return defaultScoringConfig(); }
     };
     const memory = new PoolMemory();
+    const turnLock = new TurnLock();
+    const frameStore = new FrameStore(scanFramesDir());
     let version = 0;
     const blankSnapshot = (note: string): OverlaySnapshot => ({
       state: { activeRow: 0, players: [] }, recommendations: [], highlights: [],
@@ -178,7 +190,11 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
     // GSI 说换了一局:不等画面对不上,直接清空记忆,并撤掉上一局的推荐。
     presence.onNewDraft = () => {
       memory.reset();
-      if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot(`新的一局,按 ${SCAN_HOTKEY.replace("CommandOrControl", "Ctrl")} 扫描`));
+      turnLock.reset();
+      frameStore.newGame();
+      if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot(presence.autoScanEnabled()
+        ? "新的一局,选人画面出来后自动扫描"
+        : `新的一局,按 ${SCAN_HOTKEY.replace("CommandOrControl", "Ctrl")} 扫描`));
     };
     // 对比模式:两种截图各识别一次,逐项写差异。
     const compareCaptures = async (rect: WindowRect): Promise<void> => {
@@ -210,29 +226,64 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
       void saveScanFrame(shot.rgb, ++version);
       void saveScanFrame(streamed.rgb, ++version);
     };
+    // 存帧:只在真正跑了 scanPool 时存(选人界面与否都存),按局分文件夹。失败只记日志。
+    const keepFrame = (rgb: Frames["rgb"], label: string): void => {
+      void frameStore.save(rgb, label).then((file) => diag(file ? `[scan]   帧已存 ${file}` : "[scan]   存帧失败"));
+    };
+    // 热键和自动扫描共用一把 busy,不会同时跑两次识别。热键遇到 busy 不丢:排一次,
+    // 当前这次扫完立刻补上;已经排着一次时再按就不再排。
     let busy = false;
-    const scan = async (): Promise<void> => {
-      if (busy) return; // 上一次还没扫完,忽略连按
+    let hotkeyQueued = false;
+    let lastBounds = "";
+    /** 一次完整扫描。given:自动扫描已经取好的帧(调用方已确认 Dota 在最前面);不给就自己截。
+     *  返回 null = 这次没跑识别(忙、Dota 不在最前面、对比模式或出错)。 */
+    const scan = async (source: "hotkey" | "auto", given?: Frames): Promise<PoolScanResult | null> => {
+      if (busy) {
+        if (source === "hotkey" && !hotkeyQueued) { hotkeyQueued = true; diag("[scan] 正在扫描,这次热键排到它后面"); }
+        return null;
+      }
       busy = true;
+      const who = source === "hotkey" ? "热键" : "自动";
       try {
-        const rect = currentGameRect();
-        if (!win.isDestroyed()) win.setBounds(overlayBoundsFor(rect));
-        if (CAPTURE_COMPARE) { await compareCaptures(rect); return; }
+        const hwnd = findGameWindow();
+        const rect = (hwnd ? gameClientRect(hwnd) : null) ?? FALLBACK_RECT;
+        const bounds = overlayBoundsFor(rect);
+        const boundsKey = JSON.stringify(bounds);
+        if (!win.isDestroyed() && boundsKey !== lastBounds) { win.setBounds(bounds); lastBounds = boundsKey; }
+        // 截到的不是 Dota(玩家切到了别的窗口):这一帧整个跳过,不识别、不算「不是选人界面」。
+        // 找不到 Dota 窗口时照旧扫(热键是手动的,开发时也要能用)。
+        const background = () => hwnd !== null && !isGameForeground(hwnd);
+        const skipBackground = () => { diag(`[scan] Dota 不在最前面,这次跳过(${who})`); return null; };
+        if (given === undefined && background()) return skipBackground();
+        if (CAPTURE_COMPARE) { await compareCaptures(rect); return null; }
         const t0 = Date.now();
-        const streamed = STREAM_CAPTURE ? await captureViaStream(win) : null;
-        const frames = streamed ?? await captureScreenFrames();
+        let how: string;
+        let frames: Frames;
+        if (given !== undefined && RECOGNIZE_WITH_STREAM) {
+          frames = given;
+          how = "自动扫描取的帧";
+        } else {
+          // 自动扫描在 RECOGNIZE_WITH_STREAM=false 时走这里:识别前用普通截图重新截一张。
+          const s = given === undefined && STREAM_CAPTURE && RECOGNIZE_WITH_STREAM ? await captureViaStream(win) : null;
+          how = s !== null ? "画面流" : "普通";
+          frames = s ?? await captureScreenFrames();
+          if (background()) return skipBackground();
+        }
         const t1 = Date.now();
         const deps: PoolScanDeps = { clf, lookup, ref, cfg: readCfg(), rect, memory, index, heroPortraits, similar };
         const res = await scanPool(frames, deps);
         const tileText = res.heroTileStats.map((t) => `${t.pos}:${t.chroma.toFixed(0)}/${t.std.toFixed(0)}`).join(" ");
         if (!res.onDraftScreen) {
-          diag(`[scan] 这一帧不是选人界面,已跳过,没有写入记忆(英雄格 饱和度/对比度 ${tileText})`);
-          void saveScanFrame(frames.rgb, version + 1);
-          if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot("不在选人界面,这次没有扫描"));
+          diag(`[scan] ${who} | 这一帧不是选人界面,已跳过,没有写入记忆(英雄格 饱和度/对比度 ${tileText})`);
+          keepFrame(frames.rgb, `${source}_not_draft`);
+          // 自动扫描碰到过渡画面不撤推荐(连续 2 次不是选人界面 presence 会隐藏悬浮窗);热键照旧提示。
+          if (source === "hotkey" && !win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot("不在选人界面,这次没有扫描"));
           presence.onScan(false);
-          return;
+          return res;
         }
-        diag(`[scan] 帧 ${frames.rgb.width}x${frames.rgb.height} 截图(${streamed ? "画面流" : "普通"}) ${t1 - t0}ms 识别 ${Date.now() - t1}ms | ` +
+        // 记忆发现换了一局(没开 GSI 时只能靠这个):帧换新文件夹,「轮到我」锁清掉。
+        if (res.snapshot.reset) { frameStore.newGame(); turnLock.reset(); }
+        diag(`[scan] ${who} | 帧 ${frames.rgb.width}x${frames.rgb.height} 截图(${how}) ${t1 - t0}ms 识别 ${Date.now() - t1}ms | ` +
           `池内技能 ${res.pool.length} 可选英雄 ${res.heroes.length}/12(已选走位置 ${res.takenHeroes.join(",") || "无"}) 没认出 ${res.unknownCells} 格` +
           `${res.snapshot.reset ? " (新的一局)" : ""} | 推荐 ${res.recommendations.map((r) => nameOf.get(r.candidate.valveId) ?? r.candidate.valveId).join(", ")}`);
         diag(`[scan]   英雄格 饱和度/对比度 ${tileText}`);
@@ -254,7 +305,7 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
         diag(`[scan]   我=${rowText(res.myRow)} 选位=${res.seat ?? "?"} 轮到=${rowText(res.activeRow)} 第${res.pickIndex}手(第${roundOf(res.pickIndex)}轮) | ` +
           `我的英雄 ${res.me.hero === null ? "未选/没认出" : heroName(-res.me.hero)} | 我已选 ${myAbilities.join(", ") || "无"}` +
           `${res.myPicks && res.myPicks.unknown > 0 ? `(另有 ${res.myPicks.unknown} 格没认出)` : ""}`);
-        void saveScanFrame(frames.rgb, version + 1);
+        keepFrame(frames.rgb, `${source}_turn_${rowText(res.activeRow)}`);
         const labels: Record<number, string> = {};
         for (const r of res.recommendations) {
           const n = nameOf.get(r.candidate.valveId);
@@ -281,24 +332,57 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
           note,
           version: ++version,
         };
+        // 轮到我时推荐锁住(热键不受限):锁住期间照常识别、写记忆,只是不推给悬浮窗。
+        const decision = turnLock.decide(turnReadingOf(res), source === "hotkey");
         if (!win.isDestroyed()) {
-          win.webContents.send(OVERLAY_CHANNEL, snap);
+          if (decision === "hold") {
+            diag("[auto] 轮到你,推荐已锁住,不刷新");
+          } else {
+            win.webContents.send(OVERLAY_CHANNEL, snap);
+            const b = win.getBounds();
+            diag(`[overlay] 已推送 v${snap.version}(${snap.recommendations.length} 条);窗口 ${b.width}x${b.height}@(${b.x},${b.y}) 可见=${win.isVisible()}`);
+          }
           presence.onScan(true);
-          const b = win.getBounds();
-          diag(`[overlay] 已推送 v${snap.version}(${snap.recommendations.length} 条);窗口 ${b.width}x${b.height}@(${b.x},${b.y}) 可见=${win.isVisible()}`);
         }
+        return res;
       } catch (err) {
         diag(`[scan] 扫描失败: ${err}`);
+        return null;
       } finally {
         busy = false;
+        if (hotkeyQueued) { hotkeyQueued = false; void scan("hotkey"); }
       }
     };
-    const ok = globalShortcut.register(SCAN_HOTKEY, () => { void scan(); });
+    const ok = globalShortcut.register(SCAN_HOTKEY, () => { void scan("hotkey"); });
     // 开发用:设 AD_SCAN_ONCE_AFTER_MS 时启动后自动扫一次(不用按热键,方便冒烟测试)。
     const autoScanMs = Number(process.env.AD_SCAN_ONCE_AFTER_MS);
-    if (Number.isFinite(autoScanMs) && autoScanMs >= 0) setTimeout(() => { void scan(); }, autoScanMs);
+    if (Number.isFinite(autoScanMs) && autoScanMs >= 0) setTimeout(() => { void scan("hotkey"); }, autoScanMs);
     diag(ok ? `[scan] 已就绪:在选取界面按 ${SCAN_HOTKEY} 扫描(截图方式:${CAPTURE_COMPARE ? "对比模式,画面流和普通各一张" : STREAM_CAPTURE ? "画面流,失败退回普通" : "普通"})` : `[scan] 热键 ${SCAN_HOTKEY} 注册失败(被别的程序占用?)`);
+
+    // 自动扫描。对比模式是诊断用的,只用热键,不开自动扫描。
+    // 取帧:画面流优先;画面流失败时选人阶段退回普通截图(选人阶段普通截图不影响 FPS,已实测),
+    // 轻量查看(可能在游戏里)不退回——普通截图每次都让游戏顿一下,宁可这一轮不看。
+    const grabStreamFrame = async (mode: "watch" | "draft"): Promise<Frames | null> => {
+      if (STREAM_CAPTURE) {
+        const s = await captureViaStream(win);
+        if (s !== null || mode === "watch") return s;
+      }
+      return captureScreenFrames();
+    };
+    const stopAuto = CAPTURE_COMPARE ? () => {} : startAutoScan({
+      schedule: new AutoScanSchedule(),
+      enabled: () => presence.autoScanEnabled(),
+      gsi: () => presence.currentGsi(),
+      gameRunning: () => findGameWindow() !== null,
+      gameForeground: () => { const h = findGameWindow(); return h !== null && isGameForeground(h); },
+      rect: currentGameRect,
+      grabStreamFrame,
+      scan: (frames) => scan("auto", frames),
+      diag,
+    });
+    if (CAPTURE_COMPARE) diag("[auto] 对比模式下不开自动扫描,只用热键");
     return () => {
+      stopAuto();
       globalShortcut.unregister(SCAN_HOTKEY);
       try { ref.close(); } catch { /* 忽略关闭期错误 */ }
     };
@@ -419,16 +503,8 @@ app.whenReady().then(() => {
     raiseOverlayZOrder(win);
   }, () => findGameWindow() !== null);
   void presence.start().catch((err) => diag(`[presence] 启动失败: ${err}`));
-  // 临时测量(用完删):一直盯屏幕的开销。
-  const watchMs = Number(process.env.AD_WATCH_TEST_MS);
-  const stopWatch = Number.isFinite(watchMs) && watchMs > 0
-    ? startWatchSpike({
-      everyMs: watchMs, mode: process.env.AD_WATCH_TEST_MODE ?? "full", diag,
-      gameRunning: () => findGameWindow() !== null,
-      captureFull: captureScreenFrames,
-      captureStream: () => captureViaStream(win),
-    })
-    : () => {};
+  // preload 报告画面流「不带鼠标指针」的请求实际结果(只报一次)。
+  ipcMain.on("capture:info", (_e, msg: string) => diag(`[capture] ${msg}`));
   // 等首帧加载完再开始推送,避免渲染前丢帧。
   win.webContents.once("did-finish-load", () => {
     // 手动扫描与连续监控各开一个 ReferenceDb 连到同一个 reference.db;两个连接并存会被
@@ -445,5 +521,5 @@ app.whenReady().then(() => {
       void startManualScan(win, presence).then((s) => { stop = s; });
     }
   });
-  app.on("window-all-closed", () => { stop(); stopWatch(); presence.stop(); app.quit(); });
+  app.on("window-all-closed", () => { stop(); presence.stop(); app.quit(); });
 });

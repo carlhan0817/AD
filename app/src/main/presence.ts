@@ -4,7 +4,7 @@
 //     加载中 / 不在对局里时看画面(最近一次扫描是选人界面才显示);其他阶段静默。
 //   - 没有 GSI:连续 2 次扫描都不是选人界面就静默,扫到选人界面就恢复。
 // GSI 的配置文件只在用户点了托盘菜单里的「启用」、并在弹窗里确认后才写;
-// 写完要重启 Dota 才生效。设置(开关、端口、口令、Dota 位置)存在用户数据目录的 gsi.json。
+// 写完要重启 Dota 才生效。设置(开关、端口、口令、Dota 位置、自动扫描开关)存在用户数据目录的 gsi.json。
 import { app, dialog, Menu, nativeImage, Tray, type BrowserWindow } from "electron";
 import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -13,16 +13,21 @@ import { buildGsiCfg, decideOverlay, GSI_HERO_SELECTION, GSI_INIT, GSI_WAIT_FOR_
 import { startGsiServer, type GsiServer } from "@ad/main/gsi/server";
 import { findDotaDir, gsiCfgPath, readGsiCfg, removeGsiCfg, writeGsiCfg } from "@ad/main/gsi/dota_path";
 
-interface GsiSettings { enabled: boolean; port: number; token: string; dotaDir: string | null; }
+interface GsiSettings {
+  enabled: boolean; port: number; token: string; dotaDir: string | null;
+  /** 托盘「自动扫描」勾选(和 GSI 无关,只是存在同一个文件里)。默认开。 */
+  autoScan: boolean;
+}
 
 /** 第一次启用时尝试的端口;被占用就让系统另挑一个(需要重写配置文件)。 */
 const DEFAULT_PORT = 39871;
 const RECHECK_MS = 5_000;
 
 function settingsPath(): string { return join(app.getPath("userData"), "gsi.json"); }
+const DEFAULT_SETTINGS: GsiSettings = { enabled: false, port: DEFAULT_PORT, token: "", dotaDir: null, autoScan: true };
 function loadSettings(): GsiSettings {
-  try { return { enabled: false, port: DEFAULT_PORT, token: "", dotaDir: null, ...JSON.parse(readFileSync(settingsPath(), "utf-8")) }; }
-  catch { return { enabled: false, port: DEFAULT_PORT, token: "", dotaDir: null }; }
+  try { return { ...DEFAULT_SETTINGS, ...JSON.parse(readFileSync(settingsPath(), "utf-8")) }; }
+  catch { return { ...DEFAULT_SETTINGS }; }
 }
 function saveSettings(s: GsiSettings): void {
   try { writeFileSync(settingsPath(), JSON.stringify(s, null, 2), "utf-8"); } catch { /* 存不下就下次重来 */ }
@@ -79,6 +84,16 @@ export class OverlayPresence {
     if (this.timer !== null) clearInterval(this.timer);
     void this.server?.close();
     this.tray?.destroy();
+  }
+
+  /** 现在的 GSI 状态(没开或超过 30 秒没数据为 null)。给自动扫描用。 */
+  currentGsi(): GsiState | null {
+    return this.tracker.current(Date.now());
+  }
+
+  /** 托盘「自动扫描」有没有勾上。 */
+  autoScanEnabled(): boolean {
+    return this.settings.autoScan;
   }
 
   /** 每次扫描后调用。 */
@@ -146,12 +161,15 @@ export class OverlayPresence {
     const status = !this.settings.enabled ? "GSI:未启用(按画面判断)"
       : this.server === null ? `GSI:${this.serverError ?? "没在接收"},请先关闭再重新启用(会换一个端口)`
         : gsi !== null ? `GSI:工作中(${gsi.phase ?? "不在对局里"})` : "GSI:已启用,还没收到数据(Dota 重启了吗?)";
-    const key = `${status}|${this.mode}|${this.settings.enabled}`;
+    const key = `${status}|${this.mode}|${this.settings.enabled}|${this.settings.autoScan}`;
     if (key === this.menuKey) return;
     this.menuKey = key;
     this.tray.setContextMenu(Menu.buildFromTemplate([
       { label: status, enabled: false },
       { label: `悬浮窗:${this.mode === "silent" ? "静默" : "显示"}`, enabled: false },
+      { type: "separator" },
+      { label: "自动扫描", type: "checkbox", checked: this.settings.autoScan, click: () => this.toggleAutoScan() },
+      ...(this.settings.enabled ? [] : [{ label: "启用 GSI 可以省掉游戏里的截图开销", enabled: false }]),
       { type: "separator" },
       this.settings.enabled
         ? { label: "关闭 GSI…", click: () => { void this.disable(); } }
@@ -159,6 +177,13 @@ export class OverlayPresence {
       { type: "separator" },
       { label: "退出 AD 助手", click: () => app.quit() },
     ]));
+  }
+
+  private toggleAutoScan(): void {
+    this.settings = { ...this.settings, autoScan: !this.settings.autoScan };
+    saveSettings(this.settings);
+    this.diag(`[presence] 自动扫描 ${this.settings.autoScan ? "已打开" : "已关闭(只用热键)"}`);
+    this.refreshMenu();
   }
 
   /** 启用:找 Dota → 开服务器 → 弹窗说明要写什么、写到哪 → 用户确认后才写 → 提示重启 Dota。 */
@@ -200,7 +225,7 @@ export class OverlayPresence {
       await dialog.showMessageBox({ type: "error", message: `写入失败:${err}` });
       return;
     }
-    this.settings = { enabled: true, port, token, dotaDir };
+    this.settings = { ...this.settings, enabled: true, port, token, dotaDir };
     saveSettings(this.settings);
     this.diag(`[gsi] 已启用,配置文件写到 ${path}`);
     this.refreshMenu();
