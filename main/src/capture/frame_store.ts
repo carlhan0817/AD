@@ -32,7 +32,7 @@ export class FrameStore {
         mkdirSync(dir, { recursive: true });
         this.gameDir = dir;
         this.seq = 0;
-        this.prune();
+        try { this.prune(); } catch { /* 清理失败不挡存帧 */ }
       }
       const safeLabel = label.replace(/[^\w.-]/g, "_");
       const file = join(this.gameDir, `${String(++this.seq).padStart(3, "0")}_${safeLabel}.png`);

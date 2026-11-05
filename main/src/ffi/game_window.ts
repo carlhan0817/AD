@@ -45,7 +45,12 @@ export function gameWindowStyleRaw(hwnd: ReadonlyGameHwnd): { style: number; exS
 
 /** 游戏窗口现在是不是最前面的窗口。只读查询(GetForegroundWindow),不改任何窗口状态。 */
 export function isGameForeground(hwnd: ReadonlyGameHwnd): boolean {
-  const fg = GetForegroundWindow() as unknown as number | bigint | null;
-  if (!fg) return false;
-  return BigInt(fg) === BigInt(hwnd);
+  try {
+    // koffi 的 void * 返回的是不透明指针对象,不能直接 === 或 BigInt();用 koffi.address 取数值再比。
+    const fg = GetForegroundWindow() as unknown;
+    if (!fg) return false;
+    return koffi.address(fg as never) === koffi.address(hwnd as unknown as never);
+  } catch {
+    return false; // 查询失败当作不在前台,不影响扫描循环
+  }
 }
