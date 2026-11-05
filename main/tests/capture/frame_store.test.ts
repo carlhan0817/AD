@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, basename } from "node:path";
-import { FrameStore } from "../../src/capture/frame_store";
+import { FrameStore, frameRowLabel } from "../../src/capture/frame_store";
 
 const frame = { width: 4, height: 2, data: new Uint8Array(4 * 2 * 3).fill(128) };
 
@@ -58,5 +58,12 @@ describe("FrameStore", () => {
     store.newGame();
     const bad = { width: 4, height: 2, data: new Uint8Array(3) };
     expect(await store.save(bad, "bad")).toBeNull();
+  });
+});
+
+describe("frameRowLabel", () => {
+  it("行号换成 L1..L5 / R1..R5(文件名里不能有中文,过 sanitizer 不会变成下划线)", () => {
+    expect([0, 4, 5, 9].map(frameRowLabel)).toEqual(["L1", "L5", "R1", "R5"]);
+    expect(frameRowLabel(null)).toBe("unknown");
   });
 });

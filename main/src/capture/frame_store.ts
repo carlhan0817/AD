@@ -8,6 +8,13 @@ import type { RgbFrame } from "@ad/core/recognition/rgb";
 
 const GAME_PREFIX = "game_";
 
+/** 帧文件名里的「轮到谁」:行号 0–4 → L1–L5(左列),5–9 → R1–R5(右列),认不出 → unknown。
+ *  文件名只留 ASCII(save 会把其他字符换成下划线),所以别直接用「左3」。 */
+export function frameRowLabel(row: number | null): string {
+  if (row === null) return "unknown";
+  return row < 5 ? `L${row + 1}` : `R${row - 4}`;
+}
+
 export class FrameStore {
   private gameDir: string | null = null; // 当前局文件夹;null = 还没建(新局第一次 save 才建)
   private lastStamp = 0; // 上一个文件夹用的毫秒时间,保证文件夹名严格递增、不重名
