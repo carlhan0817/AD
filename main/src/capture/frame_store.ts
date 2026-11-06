@@ -19,6 +19,7 @@ export class FrameStore {
   private gameDir: string | null = null; // 当前局文件夹;null = 还没建(新局第一次 save 才建)
   private lastStamp = 0; // 上一个文件夹用的毫秒时间,保证文件夹名严格递增、不重名
   private seq = 0; // 当前局内帧序号
+  private pending = new Set<Promise<string | null>>(); // 还没写完的帧(删文件夹前要等它们)
 
   constructor(private readonly root: string, private readonly keepGames = 5) {}
 
@@ -28,7 +29,25 @@ export class FrameStore {
   }
 
   /** 存一帧,返回存下的文件路径;任何失败返回 null,不抛错。 */
-  async save(rgb: RgbFrame, label: string): Promise<string | null> {
+  save(rgb: RgbFrame, label: string): Promise<string | null> {
+    const p = this.write(rgb, label);
+    this.pending.add(p);
+    void p.finally(() => this.pending.delete(p));
+    return p;
+  }
+
+  /** 删掉当前这一局的文件夹(正式版选人结束时用:截图里有其他玩家的名字,用完不留)。
+   *  先等这一局还没写完的帧写完再删。返回删掉的文件夹;没有当前局返回 null。 */
+  async discardCurrentGame(): Promise<string | null> {
+    const dir = this.gameDir;
+    if (dir === null) return null;
+    this.gameDir = null;
+    await Promise.allSettled([...this.pending]);
+    try { rmSync(dir, { recursive: true, force: true }); } catch { /* 删不掉就留着 */ }
+    return dir;
+  }
+
+  private async write(rgb: RgbFrame, label: string): Promise<string | null> {
     try {
       if (this.gameDir === null) {
         mkdirSync(this.root, { recursive: true });
@@ -50,13 +69,24 @@ export class FrameStore {
     }
   }
 
-  // 删掉最旧的 game_ 文件夹,只留 keepGames 个。ISO 时间按名字排就是按时间排。
+  /** 删掉所有 game_ 文件夹(正式版启动时清掉上次没来得及删的)。散放 PNG 不动;失败不抛错。 */
+  clearAllGames(): void {
+    this.gameDir = null;
+    try { this.removeOldest(0); } catch { /* 文件夹不存在等,忽略 */ }
+  }
+
+  // 删掉最旧的 game_ 文件夹,只留 keepGames 个。
   private prune(): void {
+    this.removeOldest(this.keepGames);
+  }
+
+  // ISO 时间按名字排就是按时间排;删到只剩 keep 个。
+  private removeOldest(keep: number): void {
     const dirs = readdirSync(this.root, { withFileTypes: true })
       .filter((e) => e.isDirectory() && e.name.startsWith(GAME_PREFIX))
       .map((e) => e.name)
       .sort();
-    for (const name of dirs.slice(0, Math.max(0, dirs.length - this.keepGames))) {
+    for (const name of dirs.slice(0, Math.max(0, dirs.length - keep))) {
       try { rmSync(join(this.root, name), { recursive: true, force: true }); } catch { /* 删不掉就留着 */ }
     }
   }

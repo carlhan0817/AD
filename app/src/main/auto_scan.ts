@@ -51,6 +51,8 @@ export interface AutoScanDeps {
   /** 跑一次完整识别(index.ts 的 scan("auto", frames, req));没跑成返回 null。 */
   scan: (frames: Frames, req: AutoScanRequest) => Promise<PoolScanResult | null>;
   diag: (m: string) => void;
+  /** 离开选人(draft → 别的模式)时调一次。正式版用它删掉这一局的截图。 */
+  onLeaveDraft?: () => void;
   now?: () => number;
   setTimer?: (fn: () => void, ms: number) => unknown;
   clearTimer?: (t: unknown) => void;
@@ -77,6 +79,7 @@ export function turnReadingOf(res: PoolScanResult): TurnReading {
     activeRow: res.activeRow,
     myPickCount: res.me.normals.length + res.me.ultimates.length + (res.me.hero !== null ? 1 : 0),
     complete: res.unknownCells === 0 && (res.myPicks === null || res.myPicks.unknown === 0),
+    seat: res.seat,
   };
 }
 
@@ -160,6 +163,7 @@ export function startAutoScan(deps: AutoScanDeps): () => void {
     const mode = schedule.mode(i);
     if (mode !== lastMode) {
       diag(modeChangeLine(lastMode, mode, modeReason(i, mode)));
+      if (lastMode === "draft") deps.onLeaveDraft?.();
       if (mode !== "draft") { gate = new SettleGate(); retry = null; scanFails = 0; }
       if (mode === "watch") watchStats = { since: now(), grabs: 0, hits: 0 };
       watchHits = 0;

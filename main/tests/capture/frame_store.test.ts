@@ -53,6 +53,33 @@ describe("FrameStore", () => {
     expect(gameDirs()).toHaveLength(2);
   });
 
+  it("discardCurrentGame 删掉这一局的文件夹(等存完再删),别的局和散放 PNG 不动", async () => {
+    writeFileSync(join(root, "scan_old.png"), "x");
+    const s = new FrameStore(root);
+    s.newGame();
+    const kept = await s.save(frame, "a");
+    s.newGame();
+    const pending = s.save(frame, "b"); // 还没存完就要求删
+    const removed = await s.discardCurrentGame();
+    await pending;
+    expect(removed).not.toBeNull();
+    expect(existsSync(removed!)).toBe(false);
+    expect(existsSync(kept!)).toBe(true);
+    expect(existsSync(join(root, "scan_old.png"))).toBe(true);
+    expect(await s.discardCurrentGame()).toBeNull(); // 没有当前局就什么都不做
+    const again = await s.save(frame, "c"); // 删完同一局再存:另开新文件夹
+    expect(dirname(again!)).not.toBe(removed);
+  });
+
+  it("clearAllGames 删掉所有 game_ 文件夹,散放 PNG 不动", async () => {
+    writeFileSync(join(root, "scan_old.png"), "x");
+    const s = new FrameStore(root);
+    for (let i = 0; i < 3; i++) { s.newGame(); await s.save(frame, "a"); }
+    s.clearAllGames();
+    expect(readdirSync(root)).toEqual(["scan_old.png"]);
+    new FrameStore(join(root, "missing")).clearAllGames(); // 文件夹不存在也不报错
+  });
+
   it("存失败返回 null 不抛错", async () => {
     const store = new FrameStore(root);
     store.newGame();

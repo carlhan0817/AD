@@ -142,6 +142,20 @@ function harness(over: Partial<AutoScanDeps>) {
 }
 
 describe("startAutoScan", () => {
+  it("离开选人(draft→别的模式)时调用 onLeaveDraft 一次;没进过选人不调", async () => {
+    let phase = "DOTA_GAMERULES_STATE_HERO_SELECTION";
+    const onLeaveDraft = vi.fn();
+    const h = harness({ gsi: () => ({ phase, matchId: "1", clock: 0 }), onLeaveDraft });
+    await h.settle();
+    expect(onLeaveDraft).not.toHaveBeenCalled();
+    phase = "DOTA_GAMERULES_STATE_STRATEGY_TIME";
+    await h.step();
+    expect(onLeaveDraft).toHaveBeenCalledTimes(1);
+    await h.step();
+    expect(onLeaveDraft).toHaveBeenCalledTimes(1);
+    h.stop();
+  });
+
   it("没找到 Dota:off,不截图,每秒复查", async () => {
     const h = harness({ gameRunning: () => false });
     expect(await h.settle()).toBe(OFF_POLL_MS);

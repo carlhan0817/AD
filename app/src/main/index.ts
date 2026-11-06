@@ -94,7 +94,13 @@ function currentGameRect(): WindowRect {
 
 /** 截帧存放处(app/.scan_frames/,不入库),以后可以拿运行时的真帧补进标准答案。
  *  截图里有别的玩家名字,只留在本机。 */
-function scanFramesDir(): string { return join(app.getAppPath(), ".scan_frames"); }
+// 开发版存在 app/.scan_frames(本地回归测试在读);打包后程序目录只读,改存到用户数据目录。
+function scanFramesDir(): string {
+  return app.isPackaged ? join(app.getPath("userData"), "scan_frames") : join(app.getAppPath(), ".scan_frames");
+}
+
+/** 正式版选人结束就删掉这一局的截图(里面有其他玩家的名字,用完不留);开发版留着调试用。 */
+const KEEP_SCAN_FRAMES = !app.isPackaged;
 
 /** 对比模式用:把那一帧直接存成 PNG(散放在 .scan_frames/ 下,不分局)。存失败只记日志。
  *  正式扫描的帧改由 FrameStore 按局存。 */
@@ -194,8 +200,13 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
     const memory = new PoolMemory();
     const turnLock = new TurnLock();
     const frameStore = new FrameStore(scanFramesDir());
+    if (!KEEP_SCAN_FRAMES) frameStore.clearAllGames(); // 正式版:清掉上次退出时没来得及删的截图
     const autoFrames = new AutoFramePolicy();
     const newGameFrames = () => { frameStore.newGame(); autoFrames.newGame(); };
+    const discardFramesIfRelease = (): void => {
+      if (KEEP_SCAN_FRAMES) return;
+      void frameStore.discardCurrentGame().then((dir) => { if (dir !== null) diag(`[scan] 选人结束,已删掉这一局的截图 ${dir}`); });
+    };
     let version = 0;
     const blankSnapshot = (note: string): OverlaySnapshot => ({
       state: { activeRow: 0, players: [] }, recommendations: [], highlights: [],
@@ -366,7 +377,7 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
         for (const e of turnLock.lastEvents) diag(turnEventText[e]);
         if (!win.isDestroyed()) {
           if (decision === "hold") {
-            diag("[auto] 轮到你,推荐已锁住,不刷新");
+            diag(turnLock.waitingForOthers ? "[auto] 你刚选完,等画面换人,不刷新" : "[auto] 轮到你,推荐已锁住,不刷新");
           } else {
             win.webContents.send(OVERLAY_CHANNEL, snap);
             const b = win.getBounds();
@@ -419,10 +430,12 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
       grabStreamFrame,
       scan: (frames, req) => scan("auto", frames, req),
       diag,
+      onLeaveDraft: discardFramesIfRelease,
     });
     if (CAPTURE_COMPARE) diag("[auto] 对比模式下不开自动扫描,只用热键");
     return () => {
       stopAuto();
+      discardFramesIfRelease(); // 选人中途退出程序也不留截图(正式版)
       globalShortcut.unregister(SCAN_HOTKEY);
       try { ref.close(); } catch { /* 忽略关闭期错误 */ }
     };
