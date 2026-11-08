@@ -288,6 +288,7 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
       if (loggedUnsupported === null) return;
       loggedUnsupported = null;
       diag(`[scan] 屏幕比例恢复为支持的 ${screenLayoutFor({ x: 0, y: 0, ...r })?.cls ?? "?"}(${r.width}×${r.height})`);
+      turnLock.reset(); // 提示把推荐/高亮擦空了;下一次扫描要当新一轮重新推,否则「轮到我」锁会一直不刷新到本轮结束
       if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot(""));
       presence.onScan(false);
     };

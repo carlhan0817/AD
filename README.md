@@ -139,7 +139,9 @@ The overlay locates the draft screen by the aspect ratio of the Dota 2 window, w
 | 4:3 | 1024×768, 1280×960, 1400×1050 | 1400×1050 tested in windowed mode: heroes, player cards and your seat are read; 3 of the 48 pool cells stayed unrecognized per scan (classifier confidence 0.52–0.83, not a position error). Layout still from upstream data |
 | 5:4 | 1280×1024 | supported by upstream data, not yet tested |
 
-Not supported: ratios more than 0.02 away from every class above (ratios between the listed ones, such as 1600×1024, are not supported), exclusive fullscreen, and Dota 2 not on the primary display. In these cases the app shows an "unsupported screen ratio" notice (当前屏幕比例暂不支持,请看项目主页) and does not scan.
+Ratio bands: each class accepts its target ratio ±0.02, except 21:9, which accepts 2.31–2.42 (ultrawide screens come in several shapes). A window whose ratio is outside every band (for example 1600×1024, which falls between classes) is not scanned, and the app shows an "unsupported screen ratio" notice (当前屏幕比例暂不支持,请看项目主页).
+
+Also not supported, with no notice: exclusive fullscreen and Dota 2 on a non-primary display. Run Dota 2 as a borderless window on the primary display; otherwise results will be wrong.
 
 ## How it was built
 

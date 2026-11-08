@@ -1,6 +1,6 @@
 // main/tests/capture/ratio_frames.test.ts
 // 非 1920×1080 窗口(窗口模式)下的真机帧:整局按时间顺序跑 scanPool,确认是选人界面、认不出的格不超过标定后的数。
-// 帧在 app/.scan_frames/game_<时间>/(含玩家名,只留本地,不进仓库);程序只保留最近几局的文件夹,
+// 帧在 app/.scan_frames_keep/game_<时间>/(从 .scan_frames 拷来的备份:frame_store 只留最近 5 局会清掉原件;含玩家名,只留本地,不进仓库);
 // 缺哪一局就跳过哪一局(可用 AD_SCAN_FRAMES_DIR 指向别处的备份)。缺 reference.db/模型整体 skip。
 // 客户区矩形是在帧上量出来的(Dota 窗口外有 1px 浅色边,客户区右、下各有 9px 黑边在客户区外)。
 // 设 AD_RATIO_REPORT=1 会逐帧打印读数(标定时用)。
@@ -22,7 +22,7 @@ import { defaultScoringConfig } from "@ad/core/scoring/config";
 import type { ClientRect } from "@ad/core/recognition/roi";
 
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
-const FRAMES = process.env.AD_SCAN_FRAMES_DIR ?? join(ROOT, "app", ".scan_frames");
+const FRAMES = process.env.AD_SCAN_FRAMES_DIR ?? join(ROOT, "app", ".scan_frames_keep");
 const DB = process.env.AD_REFERENCE_DB ?? join(ROOT, "pipeline", "out", "reference.db");
 const SEL = join(ROOT, "models", "templates", "sprites", "panorama", "images", "heroes", "selection");
 const MODEL = join(ROOT, "models", "classifier", "ability_classifier_fp16.onnx");

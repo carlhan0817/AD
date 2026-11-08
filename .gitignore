@@ -58,6 +58,8 @@ Desktop.ini
 app/.live.log
 # 手动扫描存下的运行时帧(含他人玩家名,只留本机)
 app/.scan_frames/
+# 非 1080p 回放测试用的真帧备份(frame_store 不清理;含他人玩家名,只留本机)
+app/.scan_frames_keep/
 # 临时诊断产物(frame-dump 重标坐标用,排查完删除)
 .frame_dump*.pgm
 docs/screenshot/_diag/
