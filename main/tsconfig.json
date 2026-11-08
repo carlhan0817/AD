@@ -13,5 +13,5 @@
       "@ad/shared/*": ["../shared/*"]
     }
   },
-  "include": ["src", "tests"]
+  "include": ["src", "tests", "tools"]
 }

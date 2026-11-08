@@ -132,11 +132,11 @@ The overlay locates the draft screen by the aspect ratio of the Dota 2 window, w
 
 | Ratio | Example resolutions | Status |
 |---|---|---|
-| 16:9 | 1366×768, **1920×1080**, 2560×1440, 3840×2160 | 1920×1080 tested on a real machine; the rest supported by formula, not yet tested |
-| 21:9 | 2560×1080, 3440×1440 | supported by formula, not yet tested |
+| 16:9 | 1280×720, 1366×768, 1600×900, **1920×1080**, 2560×1440, 3840×2160 | 1920×1080 tested on a real machine; 1600×900, 1366×768, 1360×768 and 1280×720 tested in windowed mode (at 1366×768 and smaller, up to 5–6 of the 48 pool cells can stay unrecognized per scan: the cells are in the right place, the icon classifier is just less sure at that size); 2560×1440 and up supported by formula, not yet tested |
+| 21:9 | 1834×786, 2560×1080, 3440×1440 | 1834×786 tested in windowed mode for pool and hero cells (player cards not yet verified); other sizes supported by formula |
 | 16:10 | 1440×900, 1920×1200, 2560×1600 | supported by upstream data, not yet tested |
 | 3:2 | 1440×960 | supported by upstream data, not yet tested |
-| 4:3 | 1024×768, 1280×960 | supported by upstream data, not yet tested |
+| 4:3 | 1024×768, 1280×960, 1400×1050 | 1400×1050 tested in windowed mode: heroes, player cards and your seat are read; 3 of the 48 pool cells stayed unrecognized per scan (classifier confidence 0.52–0.83, not a position error). Layout still from upstream data |
 | 5:4 | 1280×1024 | supported by upstream data, not yet tested |
 
 Not supported: ratios more than 0.02 away from every class above (ratios between the listed ones, such as 1600×1024, are not supported), exclusive fullscreen, and Dota 2 not on the primary display. In these cases the app shows an "unsupported screen ratio" notice (当前屏幕比例暂不支持,请看项目主页) and does not scan.
