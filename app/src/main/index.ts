@@ -37,6 +37,7 @@ import { rawToFrames } from "@ad/main/decode";
 import { loadIndex, type IndexEntry } from "@ad/core/recognition/index_store";
 import { loadClassifier } from "@ad/core/recognition/classifier";
 import { PoolMemory } from "@ad/core/recognition/pool_memory";
+import { screenLayoutFor } from "@ad/core/recognition/screen_layout";
 import { AutoScanSchedule } from "@ad/core/autoscan/schedule";
 import { TurnLock, type TurnEvent } from "@ad/core/autoscan/turn_lock";
 import { portraitVariants } from "@ad/core/recognition/hero_portrait";
@@ -270,6 +271,17 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
     let busy = false;
     /** 上一次记过「比例不支持」日志的尺寸;尺寸变回支持的就清掉,下次再遇到会重新记。 */
     let loggedUnsupported: string | null = null;
+    /** 比例不支持:提示用户(热键和自动扫描共用),同一尺寸只记一次日志;不存帧、不写记忆。
+     *  presence 按「有画面要给用户看」处理,提示才不会被 2 次非选人结果收掉。 */
+    const noteUnsupported = (w: number, h: number): void => {
+      const size = `${w}x${h}`;
+      if (loggedUnsupported !== size) {
+        loggedUnsupported = size;
+        diag(`[scan] 屏幕比例 ${(w / h).toFixed(2)}(${w}×${h})暂不支持,这次不扫描`);
+      }
+      if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot("当前屏幕比例暂不支持,请看项目主页"));
+      presence.onScan(true);
+    };
     let hotkeyQueued = false;
     let lastBounds = "";
     /** 一次完整扫描。given:自动扫描已经取好的帧(调用方已确认 Dota 在最前面);不给就自己截。
@@ -315,15 +327,7 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
         const deps: PoolScanDeps = { clf, lookup, ref, cfg: readCfg(), rect, memory: commit ? memory : memory.clone(), index, heroPortraits, similar };
         const res = await scanPool(frames, deps);
         if (res.unsupportedRatio !== undefined) {
-          const { width: w, height: h } = res.unsupportedRatio;
-          const size = `${w}x${h}`;
-          if (loggedUnsupported !== size) {
-            loggedUnsupported = size;
-            diag(`[scan] 屏幕比例 ${(w / h).toFixed(2)}(${w}×${h})暂不支持,这次不扫描`);
-          }
-          // 热键和自动扫描都提示;不存帧,也不写记忆。按「不是选人界面」交给 presence。
-          if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot("当前屏幕比例暂不支持,请看项目主页"));
-          presence.onScan(false);
+          noteUnsupported(res.unsupportedRatio.width, res.unsupportedRatio.height);
           return res;
         }
         loggedUnsupported = null;
@@ -442,6 +446,12 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
       gameRunning: () => findGameWindow() !== null,
       gameForeground: () => { const h = findGameWindow(); return h !== null && gameIsForeground(h); },
       rect: currentGameRect,
+      unsupportedRatio: (r) => {
+        const bad = screenLayoutFor(r) === null;
+        if (!bad) loggedUnsupported = null; // 变回支持的比例:下次再遇到不支持的会重新记
+        return bad;
+      },
+      onUnsupportedRatio: (r) => noteUnsupported(r.width, r.height),
       grabStreamFrame,
       scan: (frames, req) => scan("auto", frames, req),
       diag,

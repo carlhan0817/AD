@@ -45,6 +45,10 @@ export interface AutoScanDeps {
   gameForeground: () => boolean;
   /** 游戏客户区矩形。 */
   rect: () => ClientRect;
+  /** 这个客户区的宽高比是不是不支持(不在六类里)。不给 = 都支持。 */
+  unsupportedRatio?: (rect: ClientRect) => boolean;
+  /** 比例不支持时通知外面提示用户;同一个宽×高只通知一次,尺寸变回支持后再变回来会再通知。 */
+  onUnsupportedRatio?: (rect: ClientRect) => void;
   /** 取一帧(画面流优先);取不到返回 null,这一轮跳过。
    *  allowFallback:画面流失败时能不能退回普通截图(只有开着 GSI 且在选人相关阶段时才允许)。 */
   grabStreamFrame: (mode: "watch" | "draft", allowFallback: boolean) => Promise<Frames | null>;
@@ -144,6 +148,8 @@ export function startAutoScan(deps: AutoScanDeps): () => void {
   let watchStats = { since: now(), grabs: 0, hits: 0 };
   /** 上一轮是不是因为 Dota 不在最前面跳过的(只在变化时记日志)。 */
   let skippedBackground = false;
+  /** 已通知过「比例不支持」的尺寸;换成支持的比例就清掉。 */
+  let notifiedUnsupported: string | null = null;
 
   const inputs = (): AutoInputs => ({ enabled: deps.enabled(), gameRunning: deps.gameRunning(), gsi: deps.gsi() });
   /** 结果回来时模式还是不是取帧时那个。 */
@@ -177,6 +183,17 @@ export function startAutoScan(deps: AutoScanDeps): () => void {
       diag(fg ? "[auto] Dota 回到最前面,接着看" : "[auto] Dota 不在最前面,先不看(不算不是选人界面)");
     }
     if (!fg) return;
+
+    // 比例不支持:不截图、不识别、不喂 schedule,保持当前模式的间隔继续看,窗口改回来就恢复。
+    if (deps.unsupportedRatio !== undefined) {
+      const r0 = deps.rect();
+      if (deps.unsupportedRatio(r0)) {
+        const key = `${r0.width}x${r0.height}`;
+        if (notifiedUnsupported !== key) { notifiedUnsupported = key; deps.onUnsupportedRatio?.(r0); }
+        return;
+      }
+      notifiedUnsupported = null;
+    }
 
     // 没 GSI 进的 draft 也可能是误判进来的(人其实在游戏里):画面流坏了也不退回普通截图(会让游戏顿一下)
     const frames = await deps.grabStreamFrame(mode, mode === "draft" && i.gsi !== null);

@@ -316,3 +316,41 @@ describe("startAutoScan", () => {
     h.stop();
   });
 });
+
+describe("startAutoScan 不支持的屏幕比例", () => {
+  const BAD = { x: 0, y: 0, width: 1500, height: 920 };
+  const isBad = (r: { width: number; height: number }) => r.width === 1500;
+
+  it("watch:不取帧、不喂 schedule,间隔照旧;同一尺寸只通知一次,变回支持再变回来会再通知", async () => {
+    let rect = BAD;
+    const schedule = new AutoScanSchedule();
+    const onWatchResult = vi.spyOn(schedule, "onWatchResult");
+    const onUnsupportedRatio = vi.fn();
+    const h = harness({ schedule, rect: () => rect, unsupportedRatio: isBad, onUnsupportedRatio });
+    expect(await h.settle()).toBe(WATCH_INTERVAL_MS);
+    await h.step(); await h.step();
+    expect(h.deps.grabStreamFrame).not.toHaveBeenCalled();
+    expect(onWatchResult).not.toHaveBeenCalled();
+    expect(onUnsupportedRatio).toHaveBeenCalledTimes(1);
+    rect = RECT;
+    await h.step();
+    expect(h.deps.grabStreamFrame).toHaveBeenCalledTimes(1);
+    expect(onWatchResult).toHaveBeenCalledTimes(1);
+    rect = BAD;
+    await h.step();
+    expect(onUnsupportedRatio).toHaveBeenCalledTimes(2);
+    expect(h.deps.grabStreamFrame).toHaveBeenCalledTimes(1);
+    h.stop();
+  });
+
+  it("draft(GSI 选人阶段):不取帧、不识别,按 draft 的 1 秒继续看", async () => {
+    const onUnsupportedRatio = vi.fn();
+    const h = harness({ gsi: () => gs(GSI_HERO_SELECTION), rect: () => BAD, unsupportedRatio: isBad, onUnsupportedRatio });
+    expect(await h.settle()).toBe(DRAFT_INTERVAL_MS);
+    await h.step();
+    expect(h.deps.grabStreamFrame).not.toHaveBeenCalled();
+    expect(h.deps.scan).not.toHaveBeenCalled();
+    expect(onUnsupportedRatio).toHaveBeenCalledTimes(1);
+    h.stop();
+  });
+});
