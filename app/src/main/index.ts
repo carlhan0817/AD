@@ -284,6 +284,8 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
     };
     /** 比例回到支持的:撤掉「不支持」提示,presence 按常规重新判断(选人中下一次真扫描会再 onScan(true))。 */
     const noteSupportedAgain = (r: { width: number; height: number }): void => {
+      // 提示已经被另一条路(热键/循环)撤掉了就什么都不做,免得把刚推的真推荐又擦掉。
+      if (loggedUnsupported === null) return;
       loggedUnsupported = null;
       diag(`[scan] 屏幕比例恢复为支持的 ${screenLayoutFor({ x: 0, y: 0, ...r })?.cls ?? "?"}(${r.width}×${r.height})`);
       if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot(""));
