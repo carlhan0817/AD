@@ -585,7 +585,7 @@ app.whenReady().then(() => {
     if (win.isDestroyed()) return;
     win.showInactive();
     raiseOverlayZOrder(win);
-  }, () => findGameWindow() !== null);
+  }, () => findGameWindow() !== null, () => { const h = findGameWindow(); return h !== null && gameIsForeground(h); });
   void presence.start().catch((err) => diag(`[presence] 启动失败: ${err}`));
   // preload 报告画面流「不带鼠标指针」的请求实际结果(只报一次)。
   ipcMain.on("capture:info", (_e, msg: string) => diag(`[capture] ${msg}`));
