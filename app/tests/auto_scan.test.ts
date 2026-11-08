@@ -353,4 +353,35 @@ describe("startAutoScan 不支持的屏幕比例", () => {
     expect(onUnsupportedRatio).toHaveBeenCalledTimes(1);
     h.stop();
   });
+  it("watch:不支持→支持只调一次 onRatioSupportedAgain;从没不支持过就不调", async () => {
+    let rect = BAD;
+    const onRatioSupportedAgain = vi.fn();
+    const h = harness({ rect: () => rect, unsupportedRatio: isBad, onUnsupportedRatio: vi.fn(), onRatioSupportedAgain });
+    await h.settle();
+    await h.step();
+    expect(onRatioSupportedAgain).not.toHaveBeenCalled();
+    rect = RECT;
+    await h.step(); await h.step();
+    expect(onRatioSupportedAgain).toHaveBeenCalledTimes(1);
+    h.stop();
+    const never = vi.fn();
+    const h2 = harness({ unsupportedRatio: isBad, onRatioSupportedAgain: never });
+    await h2.settle(); await h2.step();
+    expect(never).not.toHaveBeenCalled();
+    h2.stop();
+  });
+
+  it("Dota 离开最前面再回来,尺寸还是不支持:重新通知", async () => {
+    let fg = true;
+    const onUnsupportedRatio = vi.fn();
+    const h = harness({ gameForeground: () => fg, rect: () => BAD, unsupportedRatio: isBad, onUnsupportedRatio });
+    await h.settle();
+    expect(onUnsupportedRatio).toHaveBeenCalledTimes(1);
+    fg = false;
+    await h.step();
+    fg = true;
+    await h.step();
+    expect(onUnsupportedRatio).toHaveBeenCalledTimes(2);
+    h.stop();
+  });
 });

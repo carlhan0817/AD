@@ -282,6 +282,13 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
       if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot("当前屏幕比例暂不支持,请看项目主页"));
       presence.onScan(true);
     };
+    /** 比例回到支持的:撤掉「不支持」提示,presence 按常规重新判断(选人中下一次真扫描会再 onScan(true))。 */
+    const noteSupportedAgain = (r: { width: number; height: number }): void => {
+      loggedUnsupported = null;
+      diag(`[scan] 屏幕比例恢复为支持的 ${screenLayoutFor({ x: 0, y: 0, ...r })?.cls ?? "?"}(${r.width}×${r.height})`);
+      if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot(""));
+      presence.onScan(false);
+    };
     let hotkeyQueued = false;
     let lastBounds = "";
     /** 一次完整扫描。given:自动扫描已经取好的帧(调用方已确认 Dota 在最前面);不给就自己截。
@@ -330,7 +337,7 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
           noteUnsupported(res.unsupportedRatio.width, res.unsupportedRatio.height);
           return res;
         }
-        loggedUnsupported = null;
+        if (loggedUnsupported !== null) noteSupportedAgain(rect); // 提示还在屏幕上:撤掉
         const tileText = res.heroTileStats.map((t) => `${t.pos}:${t.chroma.toFixed(0)}/${t.std.toFixed(0)}`).join(" ");
         if (!res.onDraftScreen) {
           diag(`[scan] ${who} | 这一帧不是选人界面,已跳过,没有写入记忆(英雄格 饱和度/对比度 ${tileText})`);
@@ -446,12 +453,9 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
       gameRunning: () => findGameWindow() !== null,
       gameForeground: () => { const h = findGameWindow(); return h !== null && gameIsForeground(h); },
       rect: currentGameRect,
-      unsupportedRatio: (r) => {
-        const bad = screenLayoutFor(r) === null;
-        if (!bad) loggedUnsupported = null; // 变回支持的比例:下次再遇到不支持的会重新记
-        return bad;
-      },
+      unsupportedRatio: (r) => screenLayoutFor(r) === null,
       onUnsupportedRatio: (r) => noteUnsupported(r.width, r.height),
+      onRatioSupportedAgain: noteSupportedAgain,
       grabStreamFrame,
       scan: (frames, req) => scan("auto", frames, req),
       diag,
