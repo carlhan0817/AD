@@ -126,6 +126,21 @@ npm run dev          # start the overlay
 
 Press `Ctrl+Shift+S` on the draft screen to scan. GSI can be enabled from the tray menu (restart Dota once afterwards).
 
+## Supported screens
+
+The overlay locates the draft screen by the aspect ratio of the Dota 2 window, within 0.02 of one of these classes:
+
+| Ratio | Example resolutions | Status |
+|---|---|---|
+| 16:9 | 1366×768, **1920×1080**, 2560×1440, 3840×2160 | 1920×1080 tested on a real machine; the rest supported by formula, not yet tested |
+| 21:9 | 2560×1080, 3440×1440 | supported by formula, not yet tested |
+| 16:10 | 1440×900, 1920×1200, 2560×1600 | supported by upstream data, not yet tested |
+| 3:2 | 1440×960 | supported by upstream data, not yet tested |
+| 4:3 | 1024×768, 1280×960 | supported by upstream data, not yet tested |
+| 5:4 | 1280×1024 | supported by upstream data, not yet tested |
+
+Not supported: ratios more than 0.02 away from every class above (ratios between the listed ones, such as 1600×1024, are not supported), exclusive fullscreen, and Dota 2 not on the primary display. In these cases the app shows an "unsupported screen ratio" notice (当前屏幕比例暂不支持,请看项目主页) and does not scan.
+
 ## How it was built
 
 The project moved in phases: write a plan, implement test-first, then verify on the real game. All plans are in [`docs/superpowers/plans/`](docs/superpowers/plans/) (in Chinese). Some turning points:

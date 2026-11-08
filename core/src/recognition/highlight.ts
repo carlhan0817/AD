@@ -5,6 +5,7 @@
 import { heroCellRects } from "./hero_layout";
 import { poolSlots } from "./pool_slots";
 import type { ClientRect, Rect } from "./roi";
+import { screenLayoutFor } from "./screen_layout";
 import type { Highlight } from "@ad/shared/types/ipc";
 
 /** 框离格子的距离和线宽(1080p 像素)。标准区上下两行的间隙只有 23px,外扩 + 线宽要小于它的一半。 */
@@ -13,7 +14,8 @@ export const HIGHLIGHT_THICKNESS = 3;
 
 /** 给定格子,算出框的外边界(像素)。 */
 export function highlightOuter(cell: Rect, rect: ClientRect): Rect {
-  const s = rect.width / 1920;
+  // 按高度缩放:各比例表的位置都是 rect.height / baseHeight;不支持的比例退回 height/1080。
+  const s = rect.height / (screenLayoutFor(rect)?.table.baseHeight ?? 1080);
   const out = Math.round((HIGHLIGHT_OUTSET + HIGHLIGHT_THICKNESS) * s);
   return { x: cell.x - out, y: cell.y - out, w: cell.w + out * 2, h: cell.h + out * 2 };
 }

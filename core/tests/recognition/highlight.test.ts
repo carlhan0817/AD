@@ -39,6 +39,22 @@ describe("高亮框不能碰到任何识别区域", () => {
   }
 });
 
+describe("highlightOuter 按高度缩放", () => {
+  const cell = { x: 100, y: 100, w: 50, h: 50 };
+  it("1920x1080 外扩 8", () => {
+    expect(highlightOuter(cell, RECT).x).toBe(92);
+  });
+  it("3440x1440(21:9)外扩 round(8*1440/1080)=11,不按宽度", () => {
+    const o = highlightOuter(cell, { x: 0, y: 0, width: 3440, height: 1440 });
+    expect(o.x).toBe(100 - 11);
+    expect(o.w).toBe(50 + 22);
+  });
+  it("不支持的比例按高度/1080", () => {
+    const o = highlightOuter(cell, { x: 0, y: 0, width: 1600, height: 1024 });
+    expect(o.x).toBe(100 - Math.round(8 * 1024 / 1080));
+  });
+});
+
 describe("highlightsFor", () => {
   it("技能找技能格,英雄找模型格,第一条 rank=0,坐标是比例", () => {
     const hs = highlightsFor([7, -3], RECT, (id) => (id === 7 ? 12 : null), (id) => (id === -3 ? 4 : null));
