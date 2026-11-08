@@ -8,6 +8,7 @@
 // ultimate_slots_coords / standard_slots_coords,原样未调——分类器对 1–2px 偏移不敏感
 // (14 张真帧验证,含 1918×1078 截图)。与 POOL_CELLS_1080P(为 pHash 逐格微调过)是两套表。
 import type { Rect, ClientRect } from "./roi";
+import { placeGroup } from "./screen_layout";
 
 export interface PoolSlot extends Rect {
   zone: "ultimate" | "standard";
@@ -67,16 +68,8 @@ export const POOL_SLOTS_1080P: PoolSlot[] = [
 ];
 
 /** 按游戏客户区矩形给出 48 格的像素位置(顺序同 POOL_SLOTS_1080P:先 12 终极,后 36 标准)。
- *  近 1080p(±10px,真机截屏常见的 1918×1078 一类)按恒等处理不缩放,与 heroCellRects 同规则。 */
+ *  按屏幕比例取表换算(screen_layout.ts);近 1080p(±10px,真机截屏常见的 1918×1078 一类)不缩放,
+ *  与 heroCellRects 同规则。比例不支持时退回横纵各自拉伸。 */
 export function poolSlots(rect: ClientRect): PoolSlot[] {
-  const near1080p = Math.abs(rect.width - 1920) <= 10 && Math.abs(rect.height - 1080) <= 10;
-  const sx = near1080p ? 1 : rect.width / 1920;
-  const sy = near1080p ? 1 : rect.height / 1080;
-  return POOL_SLOTS_1080P.map((s) => ({
-    ...s,
-    x: rect.x + Math.round(s.x * sx),
-    y: rect.y + Math.round(s.y * sy),
-    w: Math.round(s.w * sx),
-    h: Math.round(s.h * sy),
-  }));
+  return placeGroup("pool", rect);
 }

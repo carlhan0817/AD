@@ -4,6 +4,7 @@
 // Tiarin-Hino/ability-draft-plus,ISC)的 heroes_coords / selected_abilities_coords,
 // 抄成常量表(运行时不读文件,打包进 Electron 后路径会失效)。
 import type { Rect, ClientRect } from "./roi";
+import { placeGroup } from "./screen_layout";
 
 export interface PlayerCard extends Rect { row: number; }
 export interface CardSlot extends Rect { row: number; ultimate: boolean; }
@@ -64,21 +65,11 @@ export const CARD_SLOTS_1080P: CardSlot[] = [
   { x: 1467, y: 909, w: 55, h: 55, row: 9, ultimate: true },
 ];
 
-function scaleFor(rect: ClientRect): { sx: number; sy: number } {
-  // 近 1080p(±10px,真机截屏常见的 1918×1078 一类)按恒等处理,与 poolSlots/heroCellRects 同规则。
-  const near1080p = Math.abs(rect.width - 1920) <= 10 && Math.abs(rect.height - 1080) <= 10;
-  return near1080p ? { sx: 1, sy: 1 } : { sx: rect.width / 1920, sy: rect.height / 1080 };
-}
-
-function place<T extends Rect>(r: T, rect: ClientRect): T {
-  const { sx, sy } = scaleFor(rect);
-  return { ...r, x: rect.x + Math.round(r.x * sx), y: rect.y + Math.round(r.y * sy), w: Math.round(r.w * sx), h: Math.round(r.h * sy) };
-}
-
+// 位置按屏幕比例取表换算(screen_layout.ts);近 1080p(±10px)不缩放,与 poolSlots/heroCellRects 同规则。
 export function playerCards(rect: ClientRect): PlayerCard[] {
-  return PLAYER_CARDS_1080P.map((c) => place(c, rect));
+  return placeGroup("cards", rect);
 }
 
 export function cardSlots(rect: ClientRect): CardSlot[] {
-  return CARD_SLOTS_1080P.map((s) => place(s, rect));
+  return placeGroup("cardSlots", rect);
 }

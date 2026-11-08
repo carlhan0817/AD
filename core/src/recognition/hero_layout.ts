@@ -6,6 +6,7 @@
 // 才能用于识别。本模块只负责"坐标 → 像素 Rect"的纯几何推导,不做识别。
 // 见 docs/superpowers/specs/2026-07-07-hero-cell-recognition-design.md。
 import type { Rect, ClientRect } from "./roi";
+import { placeGroup } from "./screen_layout";
 
 export interface HeroCell extends Rect {
   order: number;             // models_coords 的 hero_order(0..11)
@@ -35,28 +36,23 @@ const MODELS_COORDS_1080P: ModelsCoordEntry[] = [
   { x: 1295, y: 756, width: 56, height: 62, hero_order: 11 },
 ];
 
+/** 16:9 基准(1920×1080)下的 12 个英雄格:models_coords 叠加 HERO_OFFSET_1080P,按 hero_order 0..11 升序。
+ *  这就是 16:9 那张位置表里的英雄格(screen_layout.ts)。 */
+export const HERO_CELLS_1080P: HeroCell[] = [...MODELS_COORDS_1080P]
+  .sort((a, b) => a.hero_order - b.hero_order)
+  .map((c) => ({
+    x: c.x + HERO_OFFSET_1080P.dx,
+    y: c.y + HERO_OFFSET_1080P.dy,
+    w: c.width,
+    h: c.height,
+    order: c.hero_order,
+    side: c.hero_order < 6 ? "left" as const : "right" as const,
+  }));
+
 /** 返回技能池两端 12 个英雄格的绝对像素 Rect,按 hero_order 0..11 升序。
- *  非 1920×1080 时按 rect 尺寸等比缩放——但与 poolCellRects 不同:近 1080p(±10px 容差内,
- *  真机截屏常见的 1918x1078 一类 capture-crop/DPI 伪影)按恒等处理、不缩放,因为逐格 pHash
- *  识别对像素极敏感,~0.998 的缩放比例也足以让多格收敛到错误英雄(已实测验证)。
- *  poolCellRects(技能池)目前未做同样的容差处理,是否有相同隐患待独立核实,不在本模块范围内。 */
+ *  按屏幕比例取表换算(screen_layout.ts):按高度缩放 + 水平居中。近 1080p(±10px,真机截屏常见的
+ *  1918×1078 一类 capture-crop/DPI 伪影)按恒等处理、不缩放——逐格识别对像素极敏感,
+ *  ~0.998 的缩放比例也足以让多格认错(已实测验证)。比例不支持时退回横纵各自拉伸。 */
 export function heroCellRects(rect: ClientRect): HeroCell[] {
-  // 真机截屏常为 1918x1078 一类的近 1080p 尺寸(同一 1080p 显示器的 capture-crop/DPI 伪影,
-  // 并非真实异分辨率);逐格 pHash 识别对像素极敏感,哪怕 sx/sy≈0.998 的缩放也会让多格收敛到
-  // 错误英雄(已实测验证,非理论推测),故在容差内直接按恒等处理,不缩放。
-  const near1080p = Math.abs(rect.width - 1920) <= 10 && Math.abs(rect.height - 1080) <= 10;
-  const sx = near1080p ? 1 : rect.width / 1920;
-  const sy = near1080p ? 1 : rect.height / 1080;
-  const ox = HERO_OFFSET_1080P.dx * sx;
-  const oy = HERO_OFFSET_1080P.dy * sy;
-  return [...MODELS_COORDS_1080P]
-    .sort((a, b) => a.hero_order - b.hero_order)
-    .map((c) => ({
-      x: rect.x + Math.round(c.x * sx + ox),
-      y: rect.y + Math.round(c.y * sy + oy),
-      w: Math.round(c.width * sx),
-      h: Math.round(c.height * sy),
-      order: c.hero_order,
-      side: c.hero_order < 6 ? "left" as const : "right" as const,
-    }));
+  return placeGroup("heroes", rect);
 }
