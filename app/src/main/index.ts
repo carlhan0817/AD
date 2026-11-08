@@ -268,6 +268,8 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
     // 热键和自动扫描共用一把 busy,不会同时跑两次识别。热键遇到 busy 不丢:排一次,
     // 当前这次扫完立刻补上;已经排着一次时再按就不再排。
     let busy = false;
+    /** 上一次记过「比例不支持」日志的尺寸;尺寸变回支持的就清掉,下次再遇到会重新记。 */
+    let loggedUnsupported: string | null = null;
     let hotkeyQueued = false;
     let lastBounds = "";
     /** 一次完整扫描。given:自动扫描已经取好的帧(调用方已确认 Dota 在最前面);不给就自己截。
@@ -312,6 +314,19 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
         const t1 = Date.now();
         const deps: PoolScanDeps = { clf, lookup, ref, cfg: readCfg(), rect, memory: commit ? memory : memory.clone(), index, heroPortraits, similar };
         const res = await scanPool(frames, deps);
+        if (res.unsupportedRatio !== undefined) {
+          const { width: w, height: h } = res.unsupportedRatio;
+          const size = `${w}x${h}`;
+          if (loggedUnsupported !== size) {
+            loggedUnsupported = size;
+            diag(`[scan] 屏幕比例 ${(w / h).toFixed(2)}(${w}×${h})暂不支持,这次不扫描`);
+          }
+          // 热键和自动扫描都提示;不存帧,也不写记忆。按「不是选人界面」交给 presence。
+          if (!win.isDestroyed()) win.webContents.send(OVERLAY_CHANNEL, blankSnapshot("当前屏幕比例暂不支持,请看项目主页"));
+          presence.onScan(false);
+          return res;
+        }
+        loggedUnsupported = null;
         const tileText = res.heroTileStats.map((t) => `${t.pos}:${t.chroma.toFixed(0)}/${t.std.toFixed(0)}`).join(" ");
         if (!res.onDraftScreen) {
           diag(`[scan] ${who} | 这一帧不是选人界面,已跳过,没有写入记忆(英雄格 饱和度/对比度 ${tileText})`);

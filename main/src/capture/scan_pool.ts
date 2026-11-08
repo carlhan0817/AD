@@ -12,6 +12,7 @@ import { readHeroTiles, type HeroTiles } from "@ad/core/recognition/hero_taken";
 import { findActiveRow, findMyRow, readCardPicks, type CardPicks } from "@ad/core/recognition/card_reading";
 import { identifyPortrait } from "@ad/core/recognition/hero_portrait";
 import { playerCards } from "@ad/core/recognition/player_cards";
+import { screenLayoutFor } from "@ad/core/recognition/screen_layout";
 import { highlightsFor } from "@ad/core/recognition/highlight";
 import { recommend } from "@ad/core/scoring/recommend";
 import type { PoolMemory, PoolSnapshot } from "@ad/core/recognition/pool_memory";
@@ -61,6 +62,8 @@ export interface PoolScanDeps {
 export interface PoolScanResult {
   /** 这一帧是不是选人界面;不是的话什么都没写进记忆,其余字段都是空的。 */
   onDraftScreen: boolean;
+  /** 客户区宽高比不在六类支持范围内:这次没扫(onDraftScreen 也是 false),带上实际宽高给提示和日志用。 */
+  unsupportedRatio?: { width: number; height: number };
   /** 每个英雄格的饱和度/标准差(日志用)。 */
   heroTileStats: HeroTiles["stats"];
   snapshot: PoolSnapshot;
@@ -95,6 +98,16 @@ export interface PoolScanResult {
 export async function scanPool(
   frames: { rgb: RgbFrame; gray: GrayFrame }, deps: PoolScanDeps,
 ): Promise<PoolScanResult> {
+  // 比例不支持:什么都不读、不碰分类器、不碰记忆(窗口被拖成怪比例的那一次也一样)。
+  if (screenLayoutFor(deps.rect) === null) {
+    return {
+      onDraftScreen: false, unsupportedRatio: { width: deps.rect.width, height: deps.rect.height }, heroTileStats: [],
+      snapshot: { names: [], available: [], heroes: new Map(), takenHeroes: new Set(), reset: false },
+      cells: [], groups: [], pool: [], heroes: [], takenHeroes: [], unknownCells: 0,
+      myRow: deps.memory.myRow, activeRow: null, me: { row: deps.memory.myRow ?? 0, hero: null, normals: [], ultimates: [] },
+      myPicks: null, highlights: [], pickIndex: 1, seat: deps.memory.mySeat, recommendations: [],
+    };
+  }
   const cells = await readPool(frames.rgb, deps.rect, deps.clf);
   const cards = await readCardPicks(frames.rgb, deps.rect, deps.clf);
   const tiles = readHeroTiles(frames.rgb, deps.rect);

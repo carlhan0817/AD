@@ -153,3 +153,29 @@ describe("scanPool", () => {
     expect((await scanPool(off, deps(fakeClassifier(ALL), memory))).onDraftScreen).toBe(true);
   });
 });
+
+describe("scanPool 不支持的屏幕比例", () => {
+  const boom: Classifier = { classNames: [], classify: async () => { throw new Error("不支持的比例不该碰分类器"); } };
+
+  it("1500×920(1.63)不支持:不扫、不碰分类器、不写记忆,带上实际宽高", async () => {
+    const memory = new PoolMemory();
+    await scanPool(frames(frameWithLiveCells(() => true)), deps(fakeClassifier(ALL), memory));
+    const before = JSON.stringify([memory.myRow, memory.mySeat, memory.myHeroId, memory.clone()]);
+    const res = await scanPool(frames(frameWithLiveCells(() => true)),
+      { ...deps(boom, memory), rect: { x: 0, y: 0, width: 1500, height: 920 } });
+    expect(res.onDraftScreen).toBe(false);
+    expect(res.unsupportedRatio).toEqual({ width: 1500, height: 920 });
+    expect(res.recommendations).toEqual([]);
+    expect(JSON.stringify([memory.myRow, memory.mySeat, memory.myHeroId, memory.clone()])).toBe(before);
+  });
+
+  it("同一个记忆换回 1920×1080 照常扫描,且没有 unsupportedRatio", async () => {
+    const memory = new PoolMemory();
+    await scanPool(frames(frameWithLiveCells(() => true)),
+      { ...deps(boom, memory), rect: { x: 0, y: 0, width: 1500, height: 920 } });
+    const res = await scanPool(frames(frameWithLiveCells(() => true)), deps(fakeClassifier(ALL), memory));
+    expect(res.onDraftScreen).toBe(true);
+    expect(res.unsupportedRatio).toBeUndefined();
+    expect(res.pool.length).toBe(48);
+  });
+});
