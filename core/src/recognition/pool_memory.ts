@@ -26,6 +26,12 @@ export interface PoolSnapshot {
 export const NEW_DRAFT_MISMATCH = 4;
 export const NEW_DRAFT_MISMATCH_RATIO = 0.6;
 
+/** 行(0..4 左 1..5,5..9 右 1..5)→ 第一轮第几个选。选人界面按选的顺序排:左1、右1、左2、右2……右5。
+ *  以前要等轮到我时用「第几手」反推,手数慢一拍时会算错、我选得快时整轮都算不出(显示「选位 ?」)。 */
+export function seatOfRow(row: number): number {
+  return row < 5 ? 2 * row + 1 : 2 * (row - 5) + 2;
+}
+
 export class PoolMemory {
   private names: (string | null)[] = [];
   private heroes = new Map<number, number | null>();
@@ -33,12 +39,10 @@ export class PoolMemory {
   private taken = new Set<number>();
   private me: number | null = null;
   private myHero: number | null = null;
-  private seat: number | null = null;
   private emptySeen: number[] = [];
 
-  /** 本局里我的选位(第一轮第几个选,1..10);轮到我时才算得出。 */
-  get mySeat(): number | null { return this.seat; }
-  rememberMySeat(seat: number | null): void { if (this.seat === null && seat !== null) this.seat = seat; }
+  /** 本局里我的选位(第一轮第几个选,1..10):由我坐的行直接定,认出我坐哪就有。 */
+  get mySeat(): number | null { return this.me === null ? null : seatOfRow(this.me); }
 
   /** 本局里「我」坐的行(认出过一次就记住;座位一局里不会变)。 */
   get myRow(): number | null { return this.me; }
@@ -62,7 +66,6 @@ export class PoolMemory {
     c.taken = new Set(this.taken);
     c.me = this.me;
     c.myHero = this.myHero;
-    c.seat = this.seat;
     c.emptySeen = [...this.emptySeen];
     return c;
   }
@@ -74,7 +77,6 @@ export class PoolMemory {
     this.taken = new Set();
     this.me = null;
     this.myHero = null;
-    this.seat = null;
     this.emptySeen = [];
   }
 

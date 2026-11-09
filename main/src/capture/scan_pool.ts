@@ -197,11 +197,6 @@ export async function scanPool(
   }
   const abilitiesGone = snapshot.available.filter((v) => !v).length;
   const pickIndex = Math.min(TOTAL_PICKS, abilitiesGone + takenHeroes.size + 1);
-  // 轮到我的时候才知道我的选位:奇数轮正序,偶数轮倒序(zigzag)。
-  if (activeRow !== null && activeRow === myRow) {
-    const round = Math.ceil(pickIndex / 10), inRound = pickIndex - (round - 1) * 10;
-    deps.memory.rememberMySeat(round % 2 === 1 ? inRound : 11 - inRound);
-  }
   const seat = deps.memory.mySeat;
   // 认出了「我」才用上下文(已选技能、配额、第几手);认不出时 pickIndex 也不用,免得按错的人推荐。
   // 技能与英雄分开取:技能取前 topK−1 个,英雄(还没选英雄时)取最好的 1 个,再合起来按分数排,

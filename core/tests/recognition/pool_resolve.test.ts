@@ -1,7 +1,7 @@
 // core/tests/recognition/pool_resolve.test.ts
 import { describe, it, expect } from "vitest";
 import { resolvePool } from "../../src/recognition/pool_resolve";
-import { PoolMemory, NEW_DRAFT_MISMATCH } from "../../src/recognition/pool_memory";
+import { PoolMemory, NEW_DRAFT_MISMATCH, seatOfRow } from "../../src/recognition/pool_memory";
 import type { CellRead } from "../../src/recognition/pool_classify";
 
 // 技能名约定 "<英雄id>_<x>":所属英雄就是前缀数字。
@@ -196,9 +196,9 @@ describe("PoolMemory.clone — 试读用的副本", () => {
   it("副本带着原记忆(名字、英雄、我坐哪、选位、已选英雄),结果和原记忆一样", () => {
     const m = new PoolMemory();
     m.observe(full(), [4]);
-    m.rememberMyRow(2); m.rememberMySeat(3); m.rememberMyHero(14);
+    m.rememberMyRow(2); m.rememberMyHero(14);
     const c = m.clone();
-    expect([c.myRow, c.mySeat, c.myHeroId, c.knownHero(0)]).toEqual([2, 3, 14, 7]);
+    expect([c.myRow, c.mySeat, c.myHeroId, c.knownHero(0)]).toEqual([2, 5, 14, 7]);
     expect(c.observe(later(), [5])).toEqual(m.clone().observe(later(), [5]));
   });
 
@@ -214,5 +214,21 @@ describe("PoolMemory.clone — 试读用的副本", () => {
     expect(s.available).toEqual([true, true, true, true]);
     expect([...s.takenHeroes]).toEqual([4]);
     expect(m.myRow).toBeNull();
+  });
+});
+
+describe("选位由座位直接定(不等轮到我)", () => {
+  // 选人界面按第一轮选的顺序排:左1、右1、左2、右2……右5 = 第 1..10 个选(真机日志几十局都是这样)。
+  it("左 k = 第 2k−1 个选,右 k = 第 2k 个选", () => {
+    expect(Array.from({ length: 10 }, (_v, row) => seatOfRow(row))).toEqual([1, 3, 5, 7, 9, 2, 4, 6, 8, 10]);
+  });
+
+  it("认出我坐哪就有选位;没认出时没有;换局后清空", () => {
+    const m = new PoolMemory();
+    expect(m.mySeat).toBe(null);
+    m.rememberMyRow(5);
+    expect(m.mySeat).toBe(2);
+    m.reset();
+    expect(m.mySeat).toBe(null);
   });
 });
