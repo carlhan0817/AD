@@ -6,6 +6,21 @@ A desktop overlay for Dota 2's **Ability Draft** (AD) mode. It captures the draf
 
 It is read-only by design: no memory reading, no injection, no simulated input. The only window it ever modifies is its own overlay.
 
+## Results at a glance
+
+Measured on a real machine in live Dota 2 games (from the app's own scan log), plus the automated test suites.
+
+| Metric | Result |
+|---|---|
+| **Recognition accuracy** | **593 / 593** cells correct in a cell-by-cell audit of 14 real-game screenshots, **0 mislabels** |
+| **Live accuracy (1080p)** | **185 / 185** live draft scans with every pool cell recognized (5,379 / 5,379 cells) |
+| **Speed** | full-board recognition in **193 ms median / 262 ms p90** (60 cells + player cards + scoring) |
+| **Latency vs. v1** | **~7× faster**: ~1.4 s per manual hotkey scan → ~0.2 s, fully automatic (200+ hands-free scans in live games) |
+| **Screen sizes** | 6 aspect-ratio classes; **0 px placement error** at all 6 window sizes measured; 100% recognition at 1600×900 and 21:9 |
+| **Safety & quality** | read-only capture, 0 compliance-scan violations · **~430 automated tests**, incl. replay of real-game frames |
+
+The classifier abstains below 0.9 confidence instead of guessing, so an uncertain cell shows as unknown rather than as a wrong ability.
+
 ---
 
 ## The problem
@@ -25,6 +40,7 @@ That is hard to weigh in a few seconds. This project turns it into a tunable sco
 - **Player state**: detects which seat is yours, whose turn it is, your hero and abilities so far, and the current round and pick number.
 - **Pick scoring**: single-ability win rate + synergy with what you already own + Aghanim's Scepter / Shard bonuses + slot need, with weights that shift smoothly from pick to pick. Abilities and heroes are scored separately, then merged into one ranking.
 - **In-game highlights**: recommendations are outlined on the matching pool cells, with a side panel showing scores and reasons.
+- **Automatic scanning**: watches the screen continuously, waits for the board to settle, and rescans on every change. No hotkey needed; recommendations freeze while it is your turn so they don't jump under the cursor.
 - **Automatic show/hide**: uses Valve's official Game State Integration (GSI) to appear only during hero selection and hide during strategy time, in game, and in the main menu. Without GSI it falls back to judging from the screen.
 - **Hot-reloaded weights**: scoring weights live in `scoring_config.json`; save the file and the next scan uses them.
 
@@ -60,7 +76,7 @@ The first version compared each cell's icon by perceptual hash (pHash). Across m
 3. **Draft memory.** Recognized names are never overwritten by later scans. A cell counts as taken only when a player card confirms it or it is empty in two consecutive scans. A large mismatch with memory is detected as a new draft.
 4. **Draft-screen gate.** Frames of the main menu, loading screens or pop-ups are skipped so they can't pollute memory.
 
-Checked cell by cell on 14 real-game screenshots: **593 / 593** correct, plus several full drafts played live. A regression test replays locally saved real-game frames.
+Checked cell by cell on 14 real-game screenshots: **593 / 593** correct. In live 1080p games, 185 of 185 draft scans recognized every pool cell, at a median of 193 ms per full scan. A regression test replays locally saved real-game frames.
 
 ### Scoring
 
@@ -94,7 +110,7 @@ For a tool like this, the most important thing is never to cross from assistant 
 | System calls | koffi (Win32 FFI: find window, read client area, style its own window) |
 | Data | SQLite (node-sqlite3-wasm, pure WASM, no native build) |
 | Offline pipeline | Python (fetches statistics, builds the reference DB and icon index) |
-| Tests | Vitest (~290 tests) · pytest |
+| Tests | Vitest (394 tests) · pytest (38 tests) |
 | Language | TypeScript (strict) |
 
 ## Repository layout
@@ -124,7 +140,7 @@ npm run compliance   # compliance red-line scan
 npm run dev          # start the overlay
 ```
 
-Press `Ctrl+Shift+S` on the draft screen to scan. GSI can be enabled from the tray menu (restart Dota once afterwards).
+Scanning is automatic during the draft (toggle "自动扫描" in the tray menu); `Ctrl+Shift+S` forces a scan at any time. GSI can be enabled from the tray menu (restart Dota once afterwards).
 
 ## Supported screens
 
@@ -155,10 +171,10 @@ The project moved in phases: write a plan, implement test-first, then verify on 
 
 - [x] Full-board recognition, player state, pick scoring, in-game highlights
 - [x] GSI automatic show/hide, memory reset on a new draft
-- [ ] Automatic scanning during the draft (no hotkey)
+- [x] Automatic scanning during the draft (no hotkey)
 - [ ] Tune weights from full draft logs
 - [ ] Installer and first-run setup
-- [ ] Resolutions other than 1920×1080
+- [x] Resolutions other than 1920×1080 (see Supported screens)
 
 ## Credits
 
