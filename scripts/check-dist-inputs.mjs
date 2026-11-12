@@ -10,6 +10,7 @@ const needed = [
   ["models/classifier/ability_classifier_fp16.onnx", "仓库自带,检查是否完整检出"],
   ["models/classifier/class_names.json", "仓库自带,检查是否完整检出"],
   ["models/tags/ability_tags.json", "仓库自带,检查是否完整检出"],
+  ["models/heroes/hero_attrs.json", "仓库自带,检查是否完整检出"],
   ["scoring_config.json", "仓库自带,检查是否完整检出"],
   ["LICENSE", "仓库自带,检查是否完整检出"],
   ["app/packaging/icon.png", "仓库自带,检查是否完整检出"],

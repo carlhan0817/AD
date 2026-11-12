@@ -57,8 +57,15 @@ describe("按轮次的权重", () => {
     expect([1, 10, 11, 20, 21, 41, 50].map(roundOf)).toEqual([1, 1, 2, 2, 3, 5, 5]);
     expect(roundOf(null)).toBe(1);
   });
-  it("单技能逐轮递减,搭配逐轮上升", () => {
-    const w = [5, 15, 25, 35, 45].map((p) => resolveWeights(cfg, p));
+  it("默认全程同权", () => {
+    for (const p of [1, 15, 25, 35, 50]) {
+      expect(resolveWeights(cfg, p).base).toBeCloseTo(1, 6);
+      expect(resolveWeights(cfg, p).synergy).toBeCloseTo(1, 6);
+    }
+  });
+  it("配了按轮次的表:单技能逐轮递减,搭配逐轮上升", () => {
+    const tables = { ...cfg, roundWeights: { ...cfg.roundWeights!, base: [1.0, 0.8, 0.6, 0.4, 0.2], synergy: [0.2, 0.4, 0.6, 0.8, 1.0] } };
+    const w = [5, 15, 25, 35, 45].map((p) => resolveWeights(tables, p));
     for (let i = 1; i < 5; i++) {
       expect(w[i].base!).toBeLessThan(w[i - 1].base!);
       expect(w[i].synergy!).toBeGreaterThan(w[i - 1].synergy!);

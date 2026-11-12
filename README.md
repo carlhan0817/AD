@@ -81,14 +81,18 @@ Checked cell by cell on 14 real-game screenshots: **593 / 593** correct. In live
 ### Scoring
 
 ```
-score = w_base(pick) · S_base
-      + w_synergy(pick) · S_synergy(best N pairs with what you own)
+score = S_base(adjusted for your hero)
+      + S_synergy(sum of pair lift with the best N things you own)
+      + S_combo(look-ahead: the other half still in the pool)
       + w_aghs(pick) · S_aghs + w_shard(pick) · S_shard
       + categoryNeed(pick, missing slot types)
 ```
 
-- Weights are set per round (5 rounds) and interpolated across the 50 picks: the single-ability weight falls over time while the synergy weight rises.
-- When pair data is missing, synergy is estimated from the ability's own strength and from similar abilities (clustered by ability tags).
+- **Hero-adjusted strength**: once you have a hero, an ability is scored by its win rate on heroes like yours (melee/ranged and primary attribute). The same ability can differ by more than 5 points between melee and ranged heroes.
+- **Synergy is lift, not raw pair win rate**: lift = pair win rate − what the two picks would be expected to win on their own, shrunk by sample size. Two strong abilities naturally win a lot together; only what is left after subtracting that is real synergy.
+- **Look-ahead**: when both halves of a combo are still in the pool, a candidate gets credit scaled by the chance its partner survives until your next pick, so the more contested half is recommended first.
+- When pair data is missing, lift is estimated from similar abilities (clustered by ability tags), discounted; with no similar data it adds nothing.
+- All weights live in `scoring_config.json` and can be given per round (interpolated across the 50 picks). By default single-ability strength and synergy are weighted equally throughout.
 - Scepter / Shard count only the gain above a baseline, with a stacking bonus and a cap.
 
 ### Staying on the right side of the line (compliance)

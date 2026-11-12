@@ -22,6 +22,7 @@
   "extraResources": [
     { "from": "../models/classifier", "to": "models/classifier" },
     { "from": "../models/tags", "to": "models/tags" },
+    { "from": "../models/heroes", "to": "models/heroes" },
     { "from": "../scoring_config.json", "to": "scoring_config.json" },
     { "from": "../pipeline/out/reference.db", "to": "pipeline/out/reference.db" },
     { "from": "../LICENSE", "to": "LICENSE.txt" }

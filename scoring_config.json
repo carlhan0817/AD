@@ -1,18 +1,18 @@
 {
   "roundWeights": {
     "base": [
-      1.0,
-      0.8,
-      0.6,
-      0.4,
-      0.2
+      1,
+      1,
+      1,
+      1,
+      1
     ],
     "synergy": [
-      0.2,
-      0.4,
-      0.6,
-      0.8,
-      1.0
+      1,
+      1,
+      1,
+      1,
+      1
     ],
     "aghs": [
       0.3,
@@ -35,11 +35,12 @@
     "similar": 0.5
   },
   "baseWeights": {
-    "base": 1.0,
-    "synergy": 1.0,
+    "base": 1,
+    "synergy": 1,
     "aghs": 0,
     "shard": 0,
-    "pos": 0
+    "pos": 0,
+    "combo": 1
   },
   "topK": 4,
   "aghsBinding": {
@@ -73,5 +74,17 @@
       0
     ]
   },
-  "synergyTopN": 2
+  "synergyTopN": 2,
+  "heroFit": {
+    "range": 0.6,
+    "attr": 0.4,
+    "shrinkN": 2000
+  },
+  "synergyLift": {
+    "shrinkN": 300
+  },
+  "comboLookahead": {
+    "discount": 0.7,
+    "sigma": 8
+  }
 }

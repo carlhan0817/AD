@@ -5,11 +5,12 @@ import { base } from "./base";
 import { synergy } from "./synergy";
 import { makePosSignal } from "./pos";
 import { aghs, makeBoundSignal, shard } from "./aghs";
+import { combo } from "./combo";
 import { atPick } from "../weights";
 
 /** 已知 SignalId 全集(用于 config 校验)。 */
 export const KNOWN_SIGNALS: SignalId[] = [
-  "base", "synergy", "pos", "aghs", "shard", "need", "snipe", "teammate_protect",
+  "base", "synergy", "pos", "aghs", "shard", "need", "combo", "snipe", "teammate_protect",
 ];
 
 /** 用 config 构建 signal 集(pos 注入 σ)。扩展位实现后在此加。 */
@@ -22,6 +23,7 @@ export function buildSignals(cfg: ScoringConfig): Partial<Record<SignalId, Signa
     shard: cfg.aghsBinding ? makeBoundSignal("shard", cfg.aghsBinding) : shard,
     // 配额满的类型已被硬过滤剔除,所以这里拿到的都是「还缺」的类型。
     need: (ctx, c) => atPick(cfg.categoryNeed?.[c.slotType] ?? [], ctx.pickIndex),
+    combo,
     // snipe / teammate_protect:实现后在此注册 + 给基础权重即可生效。
   };
 }

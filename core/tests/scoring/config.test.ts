@@ -21,7 +21,13 @@ describe("signal registry", () => {
 describe("scoring config", () => {
   it("default config: round weights and aghs binding on, pos off", () => {
     const cfg = defaultScoringConfig();
-    expect(cfg.baseWeights).toEqual({ base: 1.0, synergy: 1.0, aghs: 0, shard: 0, pos: 0 });
+    expect(cfg.baseWeights).toEqual({ base: 1.0, synergy: 1.0, aghs: 0, shard: 0, pos: 0, combo: 1.0 });
+    // 单技能与搭配全程同权;按英雄修正、搭配按增益、向前看默认都开。
+    expect(cfg.roundWeights!.base).toEqual([1, 1, 1, 1, 1]);
+    expect(cfg.roundWeights!.synergy).toEqual([1, 1, 1, 1, 1]);
+    expect(cfg.heroFit).toEqual({ range: 0.6, attr: 0.4, shrinkN: 2000 });
+    expect(cfg.synergyLift).toEqual({ shrinkN: 300 });
+    expect(cfg.comboLookahead).toEqual({ discount: 0.7, sigma: 8 });
     expect(cfg.roundWeights!.aghs!.length).toBe(5);
     expect(cfg.aghsBinding!.aghsBaseline).toBe(0.074);
     expect(cfg.alpha).toBe(0.5);

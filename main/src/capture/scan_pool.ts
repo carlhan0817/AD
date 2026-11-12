@@ -22,7 +22,7 @@ import type { GrayFrame } from "@ad/core/recognition/grid";
 import type { IndexEntry } from "@ad/core/recognition/index_store";
 import type { AbilityInfo } from "@ad/core/db/ability_lookup";
 import type { Queryable } from "@ad/shared/types/db";
-import type { Candidate, ScoredCandidate, ScoringConfig } from "@ad/shared/types/scoring";
+import type { Candidate, HeroAttr, ScoredCandidate, ScoringConfig } from "@ad/shared/types/scoring";
 import type { PlayerState } from "@ad/shared/types/draft";
 import type { Highlight } from "@ad/shared/types/ipc";
 import type { WindowRect } from "../ffi/geometry";
@@ -55,6 +55,8 @@ export interface PoolScanDeps {
   index?: IndexEntry[];
   /** 技能 → 同类技能(buildSimilarMap),搭配数据缺失时用。 */
   similar?: ReadonlyMap<number, readonly number[]>;
+  /** 英雄(负 valveId)→ 主属性和近战/远程;给了才按我的英雄修正单技能强度。 */
+  heroAttrs?: ReadonlyMap<number, HeroAttr>;
   /** 某英雄选取立绘的比对变体(portraitVariants);给了才认「我」卡上的英雄。 */
   heroPortraits?: (heroId: number) => Promise<Float32Array[] | null>;
 }
@@ -202,7 +204,8 @@ export async function scanPool(
   // 技能与英雄分开取:技能取前 topK−1 个,英雄(还没选英雄时)取最好的 1 个,再合起来按分数排,
   // 这样分类需求把英雄抬高时,英雄也能排第一。
   const pi = myRow === null ? null : pickIndex;
-  const extras = { seat, similar: deps.similar };
+  // fullPool:英雄和技能分开取推荐,但「向前看组合」要看池里的全部(英雄 × 技能也是组合)。
+  const extras = { seat, similar: deps.similar, heroAttrs: deps.heroAttrs, fullPool: candidates };
   const bestHero = recommend(candidates.filter((c) => c.slotType === "hero"), me, pi, deps.ref, deps.cfg, extras).slice(0, 1);
   const abilityCount = Math.max(1, deps.cfg.topK - bestHero.length);
   const abilityRecs = recommend(candidates.filter((c) => c.slotType !== "hero"), me, pi, deps.ref, { ...deps.cfg, topK: abilityCount }, extras);

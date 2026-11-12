@@ -65,6 +65,18 @@ describe("buildScoringContext", () => {
     expect([row.hasScepter, row.hasShard]).toEqual([true, false]);
   });
 
+  it("loads pair sample counts and pick rates", () => {
+    const ctx = buildScoringContext(ref, me, 5);
+    expect(ctx.pairPicks?.get(pairKey(-9, 5051))).toBe(10);
+    expect(ctx.winrate.get(5051)?.pickRate).toBe(0.9);
+  });
+
+  it("heroFit on but no ability_hero_attr table (old db): no fit data, no throw", () => {
+    const ctx = buildScoringContext(ref, me, 5, { heroFit: { range: 0.6, attr: 0.4, shrinkN: 2000 } });
+    expect(ctx.attrWinrate?.size).toBe(0);
+    expect(ctx.heroFit?.range).toBe(0.6);
+  });
+
   it("carries me + pickIndex through", () => {
     const ctx = buildScoringContext(ref, me, 7);
     expect(ctx.me.hero).toBe(-9);

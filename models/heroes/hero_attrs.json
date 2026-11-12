@@ -1,0 +1,517 @@
+{
+ "source": "Dota 2 scripts/npc/heroes (本机资源包)",
+ "heroes": {
+  "abaddon": {
+   "attr": "uni",
+   "ranged": false
+  },
+  "abyssal_underlord": {
+   "attr": "str",
+   "ranged": false
+  },
+  "alchemist": {
+   "attr": "str",
+   "ranged": false
+  },
+  "ancient_apparition": {
+   "attr": "int",
+   "ranged": true
+  },
+  "antimage": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "arc_warden": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "axe": {
+   "attr": "str",
+   "ranged": false
+  },
+  "bane": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "batrider": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "beastmaster": {
+   "attr": "uni",
+   "ranged": false
+  },
+  "bloodseeker": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "bounty_hunter": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "brewmaster": {
+   "attr": "uni",
+   "ranged": false
+  },
+  "bristleback": {
+   "attr": "str",
+   "ranged": false
+  },
+  "broodmother": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "centaur": {
+   "attr": "str",
+   "ranged": false
+  },
+  "chaos_knight": {
+   "attr": "str",
+   "ranged": false
+  },
+  "chen": {
+   "attr": "int",
+   "ranged": true
+  },
+  "clinkz": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "crystal_maiden": {
+   "attr": "int",
+   "ranged": true
+  },
+  "dark_seer": {
+   "attr": "int",
+   "ranged": false
+  },
+  "dark_willow": {
+   "attr": "int",
+   "ranged": true
+  },
+  "dawnbreaker": {
+   "attr": "str",
+   "ranged": false
+  },
+  "dazzle": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "death_prophet": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "disruptor": {
+   "attr": "int",
+   "ranged": true
+  },
+  "doom_bringer": {
+   "attr": "str",
+   "ranged": false
+  },
+  "dragon_knight": {
+   "attr": "str",
+   "ranged": false
+  },
+  "drow_ranger": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "earth_spirit": {
+   "attr": "str",
+   "ranged": false
+  },
+  "earthshaker": {
+   "attr": "str",
+   "ranged": false
+  },
+  "elder_titan": {
+   "attr": "str",
+   "ranged": false
+  },
+  "ember_spirit": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "enchantress": {
+   "attr": "int",
+   "ranged": true
+  },
+  "enigma": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "faceless_void": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "furion": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "grimstroke": {
+   "attr": "int",
+   "ranged": true
+  },
+  "gyrocopter": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "hoodwink": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "huskar": {
+   "attr": "str",
+   "ranged": true
+  },
+  "invoker": {
+   "attr": "int",
+   "ranged": true
+  },
+  "jakiro": {
+   "attr": "int",
+   "ranged": true
+  },
+  "juggernaut": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "keeper_of_the_light": {
+   "attr": "int",
+   "ranged": true
+  },
+  "kez": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "kunkka": {
+   "attr": "str",
+   "ranged": false
+  },
+  "largo": {
+   "attr": "str",
+   "ranged": false
+  },
+  "legion_commander": {
+   "attr": "str",
+   "ranged": false
+  },
+  "leshrac": {
+   "attr": "int",
+   "ranged": true
+  },
+  "lich": {
+   "attr": "int",
+   "ranged": true
+  },
+  "life_stealer": {
+   "attr": "str",
+   "ranged": false
+  },
+  "lina": {
+   "attr": "int",
+   "ranged": true
+  },
+  "lion": {
+   "attr": "int",
+   "ranged": true
+  },
+  "lone_druid": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "luna": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "lycan": {
+   "attr": "str",
+   "ranged": false
+  },
+  "magnataur": {
+   "attr": "uni",
+   "ranged": false
+  },
+  "marci": {
+   "attr": "uni",
+   "ranged": false
+  },
+  "mars": {
+   "attr": "str",
+   "ranged": false
+  },
+  "medusa": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "meepo": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "mirana": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "monkey_king": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "morphling": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "muerta": {
+   "attr": "int",
+   "ranged": true
+  },
+  "naga_siren": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "necrolyte": {
+   "attr": "int",
+   "ranged": true
+  },
+  "nevermore": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "night_stalker": {
+   "attr": "str",
+   "ranged": false
+  },
+  "nyx_assassin": {
+   "attr": "uni",
+   "ranged": false
+  },
+  "obsidian_destroyer": {
+   "attr": "int",
+   "ranged": true
+  },
+  "ogre_magi": {
+   "attr": "str",
+   "ranged": false
+  },
+  "omniknight": {
+   "attr": "str",
+   "ranged": false
+  },
+  "oracle": {
+   "attr": "int",
+   "ranged": true
+  },
+  "pangolier": {
+   "attr": "uni",
+   "ranged": false
+  },
+  "phantom_assassin": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "phantom_lancer": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "phoenix": {
+   "attr": "str",
+   "ranged": true
+  },
+  "primal_beast": {
+   "attr": "str",
+   "ranged": false
+  },
+  "puck": {
+   "attr": "int",
+   "ranged": true
+  },
+  "pudge": {
+   "attr": "str",
+   "ranged": false
+  },
+  "pugna": {
+   "attr": "int",
+   "ranged": true
+  },
+  "queenofpain": {
+   "attr": "int",
+   "ranged": true
+  },
+  "rattletrap": {
+   "attr": "str",
+   "ranged": false
+  },
+  "razor": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "riki": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "ringmaster": {
+   "attr": "int",
+   "ranged": true
+  },
+  "rubick": {
+   "attr": "int",
+   "ranged": true
+  },
+  "sand_king": {
+   "attr": "uni",
+   "ranged": false
+  },
+  "shadow_demon": {
+   "attr": "int",
+   "ranged": true
+  },
+  "shadow_shaman": {
+   "attr": "int",
+   "ranged": true
+  },
+  "shredder": {
+   "attr": "str",
+   "ranged": false
+  },
+  "silencer": {
+   "attr": "int",
+   "ranged": true
+  },
+  "skeleton_king": {
+   "attr": "str",
+   "ranged": false
+  },
+  "skywrath_mage": {
+   "attr": "int",
+   "ranged": true
+  },
+  "slardar": {
+   "attr": "str",
+   "ranged": false
+  },
+  "slark": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "snapfire": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "sniper": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "spectre": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "spirit_breaker": {
+   "attr": "str",
+   "ranged": false
+  },
+  "storm_spirit": {
+   "attr": "int",
+   "ranged": true
+  },
+  "sven": {
+   "attr": "str",
+   "ranged": false
+  },
+  "target_dummy": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "techies": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "templar_assassin": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "terrorblade": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "tidehunter": {
+   "attr": "str",
+   "ranged": false
+  },
+  "tinker": {
+   "attr": "int",
+   "ranged": true
+  },
+  "tiny": {
+   "attr": "str",
+   "ranged": false
+  },
+  "treant": {
+   "attr": "str",
+   "ranged": false
+  },
+  "troll_warlord": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "tusk": {
+   "attr": "str",
+   "ranged": false
+  },
+  "undying": {
+   "attr": "str",
+   "ranged": false
+  },
+  "ursa": {
+   "attr": "agi",
+   "ranged": false
+  },
+  "vengefulspirit": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "venomancer": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "viper": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "visage": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "void_spirit": {
+   "attr": "uni",
+   "ranged": false
+  },
+  "warlock": {
+   "attr": "int",
+   "ranged": true
+  },
+  "weaver": {
+   "attr": "agi",
+   "ranged": true
+  },
+  "windrunner": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "winter_wyvern": {
+   "attr": "int",
+   "ranged": true
+  },
+  "wisp": {
+   "attr": "uni",
+   "ranged": true
+  },
+  "witch_doctor": {
+   "attr": "int",
+   "ranged": true
+  },
+  "zuus": {
+   "attr": "int",
+   "ranged": true
+  }
+ }
+}

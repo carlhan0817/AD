@@ -12,7 +12,29 @@ export interface Candidate {
 export interface WinrateRow {
   winrate: number | null;
   avgPickPosition: number | null;
+  /** 多大比例的对局里它被人选走(0..1);没有数据为空。 */
+  pickRate?: number | null;
 }
+
+/** 英雄的主属性和近战/远程(来自 models/heroes/hero_attrs.json)。 */
+export interface HeroAttr {
+  attr: "str" | "agi" | "int" | "uni";
+  ranged: boolean;
+}
+
+/** 某技能在某一类英雄上的胜率(来自 ability_hero_attr)。 */
+export interface AttrWinrate { winrate: number; picks: number; }
+
+/** 单技能强度按我的英雄修正:技能在「近战/远程」和「主属性」这两类英雄上的胜率,
+ *  各自与总体胜率的差,按样本量打折后按比例加到单技能强度上。 */
+export interface HeroFit { range: number; attr: number; shrinkN: number; }
+
+/** 搭配按「增益」算:组合胜率 − 两个单件应有的胜率,再按样本量打折(样本数 / (样本数 + shrinkN))。 */
+export interface SynergyLift { shrinkN: number; }
+
+/** 向前看:候选和池里还在的某一件有强组合时,按「那一件能留到我下一手的概率」给候选加分。
+ *  discount 是整体折扣(下一手不一定真会拿它);sigma 是「一件东西大概在第几手被选走」的离散程度。 */
+export interface ComboLookahead { discount: number; sigma: number; }
 
 /** 神杖/魔晶升级后的独立胜率(来自 ability_aghs)。已是相对基础胜率的「收益差」。 */
 export interface AghsRow {
@@ -43,6 +65,20 @@ export interface ScoringContext {
   pairWinrate: Map<string, number>;
   /** valveId → 神杖/魔晶收益。 */
   aghs: Map<number, AghsRow>;
+  /** "a|b" → 这个组合的样本数(搭配按增益算时用来打折)。 */
+  pairPicks?: Map<string, number>;
+  /** 技能 valveId → 各类英雄(melee/ranged/str/agi/int/uni)上的胜率。 */
+  attrWinrate?: Map<number, Record<string, AttrWinrate>>;
+  /** 英雄 valveId(负数)→ 主属性和近战/远程。 */
+  heroAttrs?: ReadonlyMap<number, HeroAttr>;
+  /** 给了就按我的英雄修正单技能强度。 */
+  heroFit?: HeroFit;
+  /** 给了就按增益算搭配。 */
+  synergyLift?: SynergyLift;
+  /** 给了(且有 pool)就向前看池里的组合。 */
+  comboLookahead?: ComboLookahead;
+  /** 池里还在的全部候选(英雄和技能都算),向前看用。 */
+  pool?: readonly Candidate[];
 }
 
 /** SignalId:对齐 打分细则.md §2 的五个信号。可扩展。 */
@@ -53,6 +89,7 @@ export type SignalId =
   | "aghs"     // 神杖增益
   | "shard"    // 魔晶增益
   | "need"     // 分类需求:还没选的类型(英雄/大招)逐轮加分
+  | "combo"    // 向前看:和池里还在的另一件的组合
   // 扩展位(后续按同一注册表模式接入,不改 score()):
   | "snipe"
   | "teammate_protect";
@@ -103,6 +140,12 @@ export interface ScoringConfig {
   pairFallback?: PairFallback;
   /** 搭配分只取已选里最配的几件求平均(默认 2):配得差的已选件不再稀释配得好的。 */
   synergyTopN?: number;
+  /** 单技能强度按我的英雄修正;不给就不修正。 */
+  heroFit?: HeroFit;
+  /** 搭配按增益算(并把最配的几件相加而不是求平均);不给就用原始搭配胜率。 */
+  synergyLift?: SynergyLift;
+  /** 向前看池里的组合;不给就不看。要配合 baseWeights.combo 才生效。 */
+  comboLookahead?: ComboLookahead;
 }
 
 /** 打分结果。breakdown 保留各维度贡献(w·S),供 overlay/解释层 grounded 展示。 */

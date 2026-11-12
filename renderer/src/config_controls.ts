@@ -11,7 +11,8 @@ export interface ConfigControls {
   firstRoundSize: number;
   topK: number;
   /** 控件不编辑的字段(轮次权重等),原样带回去。 */
-  rest: Pick<ScoringConfig, "roundWeights" | "aghsBinding" | "categoryNeed" | "synergyTopN" | "seatBaseBonus" | "pairFallback">;
+  rest: Pick<ScoringConfig, "roundWeights" | "aghsBinding" | "categoryNeed" | "synergyTopN" | "seatBaseBonus" | "pairFallback"
+    | "heroFit" | "synergyLift" | "comboLookahead">;
 }
 
 export function configToControls(cfg: ScoringConfig): ConfigControls {
@@ -19,7 +20,8 @@ export function configToControls(cfg: ScoringConfig): ConfigControls {
     weights: (Object.entries(cfg.baseWeights) as [SignalId, number][]).map(([id, weight]) => ({ id, weight })),
     alpha: cfg.alpha, beta: cfg.beta, sigma: cfg.sigma,
     firstRoundSize: cfg.firstRoundSize, topK: cfg.topK,
-    rest: { roundWeights: cfg.roundWeights, aghsBinding: cfg.aghsBinding, categoryNeed: cfg.categoryNeed, synergyTopN: cfg.synergyTopN, seatBaseBonus: cfg.seatBaseBonus, pairFallback: cfg.pairFallback },
+    rest: { roundWeights: cfg.roundWeights, aghsBinding: cfg.aghsBinding, categoryNeed: cfg.categoryNeed, synergyTopN: cfg.synergyTopN, seatBaseBonus: cfg.seatBaseBonus, pairFallback: cfg.pairFallback,
+      heroFit: cfg.heroFit, synergyLift: cfg.synergyLift, comboLookahead: cfg.comboLookahead },
   };
 }
 

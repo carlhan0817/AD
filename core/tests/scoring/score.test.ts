@@ -37,9 +37,12 @@ describe("scoreCandidates (dynamic weighting)", () => {
     expect(ranked.map((r) => r.candidate.valveId)).toEqual([5052, -7, 5053]);
   });
 
-  it("early picks: synergy counts little, last round: most (round weights)", () => {
-    const early = scoreCandidates(POOL, ctx(5), defaultScoringConfig()).find((r) => r.candidate.valveId === 5052)!;
-    const late = scoreCandidates(POOL, ctx(45), defaultScoringConfig()).find((r) => r.candidate.valveId === 5052)!;
+  it("round weight tables: synergy counts little early, most in the last round", () => {
+    // 默认配置现在全程同权;按轮次变化的表仍然可配,这里显式给一张。
+    const d = defaultScoringConfig();
+    const tables: ScoringConfig = { ...d, roundWeights: { ...d.roundWeights!, base: [1.0, 0.8, 0.6, 0.4, 0.2], synergy: [0.2, 0.4, 0.6, 0.8, 1.0] } };
+    const early = scoreCandidates(POOL, ctx(5), tables).find((r) => r.candidate.valveId === 5052)!;
+    const late = scoreCandidates(POOL, ctx(45), tables).find((r) => r.candidate.valveId === 5052)!;
     expect(late.breakdown.synergy!).toBeGreaterThan(early.breakdown.synergy!);
     expect(late.breakdown.base!).toBeLessThan(early.breakdown.base!);
   });

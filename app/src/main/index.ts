@@ -65,9 +65,10 @@ import { buildAbilityLookup } from "@ad/core/db/ability_lookup";
 import { ReferenceDb } from "@ad/core/db/reference";
 import { defaultScoringConfig, loadScoringConfig } from "@ad/core/scoring/config";
 import { buildSimilarMap, loadAbilityTags } from "@ad/core/scoring/similar";
+import { buildHeroAttrs } from "@ad/core/scoring/hero_attrs";
 import { roundOf } from "@ad/core/scoring/weights";
 import type { DraftState, PlayerState } from "@ad/shared/types/draft";
-import type { ScoredCandidate } from "@ad/shared/types/scoring";
+import type { HeroAttr, ScoredCandidate } from "@ad/shared/types/scoring";
 
 const SCAN_HOTKEY = "CommandOrControl+Shift+S";
 const FALLBACK_RECT: WindowRect = { x: 0, y: 0, width: 1920, height: 1080 };
@@ -75,11 +76,12 @@ const FALLBACK_RECT: WindowRect = { x: 0, y: 0, width: 1920, height: 1080 };
 // 路径锚点:开发时 app.getAppPath() 是 app/ 目录,上一级就是仓库根。
 // 安装版里它是 resources/app.asar,上一级是 resources/;打包时把 models、pipeline/out/reference.db、
 // scoring_config.json 按同样的相对位置放进 resources/(见 app/electron-builder.json),所以两边路径一样。
-function resolveModelPaths(): { index: string; db: string; model: string; classNames: string; selection: string; tags: string; scoring: string } {
+function resolveModelPaths(): { index: string; db: string; model: string; classNames: string; selection: string; tags: string; heroAttrs: string; scoring: string } {
   const appRoot = app.getAppPath(); // .../AD/app
   return {
     selection: join(appRoot, "../models/templates/sprites/panorama/images/heroes/selection"),
     tags: join(appRoot, "../models/tags/ability_tags.json"),
+    heroAttrs: join(appRoot, "../models/heroes/hero_attrs.json"),
     scoring: join(appRoot, "../scoring_config.json"),
     index: join(appRoot, "../models/templates/phash_index.json"),
     db: join(appRoot, "../pipeline/out/reference.db"),
@@ -226,6 +228,11 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
 
     const similar = existsSync(paths.tags) ? buildSimilarMap(loadAbilityTags(paths.tags), lookup) : undefined;
     diag(`[scan] 同类技能表 ${similar ? `${similar.size} 条` : "无"}`);
+    // 英雄的主属性和近战/远程:有了才按我的英雄修正单技能强度;缺了或读坏了就不修正。
+    let heroAttrs: Map<number, HeroAttr> | undefined;
+    try { if (existsSync(paths.heroAttrs)) heroAttrs = buildHeroAttrs(readFileSync(paths.heroAttrs, "utf-8"), pictureOf); }
+    catch (err) { diag(`[scan] hero_attrs.json 读取失败,不按英雄修正: ${err}`); }
+    diag(`[scan] 英雄属性表 ${heroAttrs ? `${heroAttrs.size} 个` : "无(不按英雄修正)"}`);
     // 权重放在仓库根的 scoring_config.json,每次扫描都重新读:改完存盘,下一次扫描就生效,不用重启。
     // 文件写错时记日志并沿用默认值,不影响扫描。
     const readCfg = () => {
@@ -264,7 +271,7 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
       const shot = await captureScreenFrames();
       const t2 = Date.now();
       if (streamed === null) { diag("[compare] 画面流取帧失败,这次没法对比"); return; }
-      const run = (f: typeof shot) => scanPool(f, { clf, lookup, ref, cfg: readCfg(), rect, memory: new PoolMemory(), index, heroPortraits, similar });
+      const run = (f: typeof shot) => scanPool(f, { clf, lookup, ref, cfg: readCfg(), rect, memory: new PoolMemory(), index, heroPortraits, similar, heroAttrs });
       const a = await run(shot);
       const b = await run(streamed);
       const diffs: string[] = [];
@@ -368,7 +375,7 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
           if (background()) return skipBackground();
         }
         const t1 = Date.now();
-        const deps: PoolScanDeps = { clf, lookup, ref, cfg: readCfg(), rect, memory: commit ? memory : memory.clone(), index, heroPortraits, similar };
+        const deps: PoolScanDeps = { clf, lookup, ref, cfg: readCfg(), rect, memory: commit ? memory : memory.clone(), index, heroPortraits, similar, heroAttrs };
         const res = await scanPool(frames, deps);
         if (res.unsupportedRatio !== undefined) {
           noteUnsupported(res.unsupportedRatio.width, res.unsupportedRatio.height);
