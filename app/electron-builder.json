@@ -1,0 +1,43 @@
+{
+  "appId": "io.github.carlhan0817.ad-assistant",
+  "productName": "AD Assistant",
+  "copyright": "Copyright (c) 2026 carlHan",
+  "electronVersion": "31.7.7",
+  "npmRebuild": false,
+  "directories": { "output": "release", "buildResources": "packaging" },
+  "files": [
+    "out/**",
+    "package.json",
+    "!**/node_modules/onnxruntime-node/bin/**/darwin/**",
+    "!**/node_modules/onnxruntime-node/bin/**/linux/**"
+  ],
+  "asarUnpack": [
+    "**/node_modules/onnxruntime-node/**",
+    "**/node_modules/koffi/**",
+    "**/node_modules/@koromix/**",
+    "**/node_modules/sharp/**",
+    "**/node_modules/@img/**",
+    "**/node_modules/node-sqlite3-wasm/**"
+  ],
+  "extraResources": [
+    { "from": "../models/classifier", "to": "models/classifier" },
+    { "from": "../models/tags", "to": "models/tags" },
+    { "from": "../scoring_config.json", "to": "scoring_config.json" },
+    { "from": "../pipeline/out/reference.db", "to": "pipeline/out/reference.db" },
+    { "from": "../LICENSE", "to": "LICENSE.txt" }
+  ],
+  "electronLanguages": ["zh-CN", "en-US"],
+  "win": {
+    "target": [{ "target": "nsis", "arch": ["x64"] }],
+    "icon": "packaging/icon.png",
+    "artifactName": "AD-Assistant-Setup-${version}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "packElevateHelper": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "shortcutName": "AD Assistant"
+  }
+}

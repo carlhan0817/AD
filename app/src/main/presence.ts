@@ -97,6 +97,9 @@ export class OverlayPresence {
     this.tray?.destroy();
   }
 
+  /** 已经知道的 Dota 安装位置(启用游戏内追踪时找到或用户选的);不知道为 null。 */
+  dotaDir(): string | null { return this.settings.dotaDir; }
+
   /** 现在的 GSI 状态(没开或超过 30 秒没数据为 null)。给自动扫描用。 */
   currentGsi(): GsiState | null {
     return this.tracker.current(Date.now());
@@ -185,9 +188,9 @@ export class OverlayPresence {
   private refreshMenu(): void {
     if (this.tray === null) return;
     const gsi = this.tracker.current(Date.now());
-    const status = !this.settings.enabled ? "GSI:未启用(按画面判断)"
-      : this.server === null ? `GSI:${this.serverError ?? "没在接收"},请先关闭再重新启用(会换一个端口)`
-        : gsi !== null ? `GSI:工作中(${gsi.phase ?? "不在对局里"})` : "GSI:已启用,还没收到数据(Dota 重启了吗?)";
+    const status = !this.settings.enabled ? "游戏内追踪:未启用(按画面判断)"
+      : this.server === null ? `游戏内追踪:${this.serverError ?? "没在接收"},请先关闭再重新启用(会换一个端口)`
+        : gsi !== null ? `游戏内追踪:工作中(${gsi.phase ?? "不在对局里"})` : "游戏内追踪:已启用,还没收到数据(Dota 重启了吗?)";
     const key = `${status}|${this.mode}|${this.settings.enabled}|${this.settings.autoScan}`;
     if (key === this.menuKey) return;
     this.menuKey = key;
@@ -196,11 +199,11 @@ export class OverlayPresence {
       { label: `悬浮窗:${this.mode === "silent" ? "静默" : "显示"}`, enabled: false },
       { type: "separator" },
       { label: "自动扫描", type: "checkbox", checked: this.settings.autoScan, click: () => this.toggleAutoScan() },
-      ...(this.settings.enabled ? [] : [{ label: "启用 GSI 可以省掉游戏里的截图开销", enabled: false }]),
+      ...(this.settings.enabled ? [] : [{ label: "启用游戏内追踪可以省掉游戏里的截图开销", enabled: false }]),
       { type: "separator" },
       this.settings.enabled
-        ? { label: "关闭 GSI…", click: () => { void this.disable(); } }
-        : { label: "启用 GSI(自动出现/静默)…", click: () => { void this.enable(); } },
+        ? { label: "关闭游戏内追踪…", click: () => { void this.disable(); } }
+        : { label: "启用游戏内追踪(自动出现/静默)…", click: () => { void this.enable(); } },
       { type: "separator" },
       { label: "退出 AD 助手", click: () => app.quit() },
     ]));
@@ -229,7 +232,7 @@ export class OverlayPresence {
     this.server = null;
     const server = await this.startServer(DEFAULT_PORT) ?? await this.startServer(0);
     if (server === null) {
-      await dialog.showMessageBox({ type: "error", message: "无法在本机开启接收端口,GSI 没有启用。" });
+      await dialog.showMessageBox({ type: "error", message: "无法在本机开启接收端口,游戏内追踪没有启用。" });
       return;
     }
     const port = server.port;
@@ -238,7 +241,7 @@ export class OverlayPresence {
     const { response } = await dialog.showMessageBox({
       type: "question",
       buttons: ["写入", "取消"], defaultId: 0, cancelId: 1,
-      title: "启用 GSI",
+      title: "启用游戏内追踪",
       message: "要往 Dota 的配置文件夹写入一个文件,让 Dota 把游戏阶段发给本程序。",
       detail: `只写这一个文件,不改 Dota 的其他任何文件;数据只发到本机,不联网。\n\n位置:\n${path}\n\n内容:\n${content}`,
     });
@@ -256,7 +259,7 @@ export class OverlayPresence {
     saveSettings(this.settings);
     this.diag(`[gsi] 已启用,配置文件写到 ${path}`);
     this.refreshMenu();
-    await dialog.showMessageBox({ type: "info", message: "已写入。请重启 Dota 2,GSI 才会生效。" });
+    await dialog.showMessageBox({ type: "info", message: "已写入。请重启 Dota 2,游戏内追踪才会生效。" });
   }
 
   /** 关闭:停服务器;问用户要不要删掉配置文件。 */
@@ -269,7 +272,7 @@ export class OverlayPresence {
     if (dotaDir !== null && readGsiCfg(dotaDir) !== null) {
       const { response } = await dialog.showMessageBox({
         type: "question", buttons: ["删除", "保留"], defaultId: 0, cancelId: 1,
-        message: "GSI 已关闭。要删除写进 Dota 文件夹的那个配置文件吗?", detail: gsiCfgPath(dotaDir),
+        message: "游戏内追踪已关闭。要删除写进 Dota 文件夹的那个配置文件吗?", detail: gsiCfgPath(dotaDir),
       });
       if (response === 0) removeGsiCfg(dotaDir);
     }
@@ -285,7 +288,7 @@ export class OverlayPresence {
     const cfg = readGsiCfg(dir);
     const got = cfg === null ? null : parseGsiCfg(cfg);
     if (got === null || got.port !== this.settings.port || got.token !== this.settings.token) {
-      this.diag("[gsi] Dota 文件夹里的配置文件不见了或和程序对不上,请在托盘菜单里重新启用 GSI");
+      this.diag("[gsi] Dota 文件夹里的配置文件不见了或和程序对不上,请在托盘菜单里重新启用游戏内追踪");
     }
   }
 }

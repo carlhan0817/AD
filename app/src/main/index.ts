@@ -10,14 +10,31 @@
 // overlay:guide 频道当前无人消费,renderer 端展示待后续任务接 preload bridge。
 import { app, BrowserWindow, globalShortcut, ipcMain, screen } from "electron";
 import { join } from "node:path";
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync } from "node:fs";
 import sharp from "sharp";
 
-// 诊断日志:主进程 console 在 electron-vite dev 终端不回显,故同时落盘到 app/.live.log,
+// 安装版的名字和数据目录(%APPDATA%/AD Assistant)。必须在第一次用到数据目录之前定好。
+// 开发版不改,继续用原来的目录(里面有已经存好的设置)。
+if (app.isPackaged) {
+  app.setName("AD Assistant");
+  app.setPath("userData", join(app.getPath("appData"), "AD Assistant"));
+}
+
+// 诊断日志:主进程 console 在 electron-vite dev 终端不回显,故同时落盘,
 // 便于确认扫描 / 推送链路在 Electron 内的真实运行状态(成功与失败都记)。
+// 开发版写 app/.live.log;安装版的程序目录只读,改写到数据目录下的 ad-assistant.log。
+const LOG_FILE = app.isPackaged ? join(app.getPath("userData"), "ad-assistant.log") : join(app.getAppPath(), ".live.log");
+const LOG_MAX_BYTES = 5 * 1024 * 1024;
+if (app.isPackaged) {
+  // 安装版日志超过 5 MB 就在启动时换一个新文件,旧的留一份(.old),不让它一直涨。
+  try {
+    mkdirSync(app.getPath("userData"), { recursive: true });
+    if (statSync(LOG_FILE).size > LOG_MAX_BYTES) renameSync(LOG_FILE, `${LOG_FILE}.old`);
+  } catch { /* 还没有日志文件 */ }
+}
 function diag(msg: string): void {
   const line = `[${new Date().toISOString()}] ${msg}\n`;
-  try { appendFileSync(join(app.getAppPath(), ".live.log"), line); } catch { /* 忽略日志写入失败 */ }
+  try { appendFileSync(LOG_FILE, line); } catch { /* 忽略日志写入失败 */ }
   console.log(msg);
 }
 import { OVERLAY_CHANNEL, type OverlaySnapshot } from "@ad/shared/types/ipc";
@@ -34,6 +51,8 @@ import { scanPool, type PoolScanDeps, type PoolScanResult } from "@ad/main/captu
 import { FrameStore, frameRowLabel } from "@ad/main/capture/frame_store";
 import { captureScreenFrames, physicalScreenSize, primaryScreenSourceId } from "@ad/main/capture/screen_source";
 import { rawToFrames } from "@ad/main/decode";
+import { findDotaDir } from "@ad/main/gsi/dota_path";
+import { openHeroArt, type HeroArt } from "@ad/main/assets/hero_art";
 import { loadIndex, type IndexEntry } from "@ad/core/recognition/index_store";
 import { loadClassifier } from "@ad/core/recognition/classifier";
 import { PoolMemory } from "@ad/core/recognition/pool_memory";
@@ -53,9 +72,9 @@ import type { ScoredCandidate } from "@ad/shared/types/scoring";
 const SCAN_HOTKEY = "CommandOrControl+Shift+S";
 const FALLBACK_RECT: WindowRect = { x: 0, y: 0, width: 1920, height: 1080 };
 
-// 路径锚点:app.getAppPath() 在 dev(electron-vite dev,cwd=app/)和打包后均稳定指向
-// app/ 目录(含 app/package.json 的目录),与 main/src/capture/monitor_once.ts 用
-// import.meta.url 相对 main/src 解出的 repo 根 + models|pipeline 路径等价。
+// 路径锚点:开发时 app.getAppPath() 是 app/ 目录,上一级就是仓库根。
+// 安装版里它是 resources/app.asar,上一级是 resources/;打包时把 models、pipeline/out/reference.db、
+// scoring_config.json 按同样的相对位置放进 resources/(见 app/electron-builder.json),所以两边路径一样。
 function resolveModelPaths(): { index: string; db: string; model: string; classNames: string; selection: string; tags: string; scoring: string } {
   const appRoot = app.getAppPath(); // .../AD/app
   return {
@@ -170,25 +189,40 @@ async function startManualScan(win: BrowserWindow, presence: OverlayPresence): P
     for (const r of ref.all("SELECT valve_id, english_name FROM abilities") as { valve_id: number; english_name: string }[]) {
       nameOf.set(r.valve_id, r.english_name);
     }
-    // 认「我」卡上的英雄要用英雄选取立绘(流水线下载到本地);缺了就不认,按没选英雄推荐。
+    // 认「我」卡上的英雄要用英雄选取立绘;缺了就不认,按没选英雄推荐。
+    // 开发时用流水线下载到本地的图;安装版不带这些图,直接从用户本机的 Dota 资源包里读(只读)。
     const pictureOf = new Map<number, string>();
     for (const r of ref.all("SELECT hero_id, picture FROM heroes") as { hero_id: number; picture: string }[]) {
       pictureOf.set(r.hero_id, r.picture);
+    }
+    const localArt = existsSync(paths.selection);
+    let dotaArt: HeroArt | null = null;
+    if (!localArt) {
+      try {
+        const dotaDir = presence.dotaDir() ?? await findDotaDir();
+        if (dotaDir !== null) dotaArt = openHeroArt(dotaDir);
+      } catch (err) { diag(`[scan] 读 Dota 资源包里的英雄立绘失败: ${err}`); }
     }
     const portraitCache = new Map<number, Float32Array[] | null>();
     const heroPortraits = async (heroId: number): Promise<Float32Array[] | null> => {
       if (portraitCache.has(heroId)) return portraitCache.get(heroId)!;
       let v: Float32Array[] | null = null;
-      const file = join(paths.selection, `npc_dota_hero_${pictureOf.get(heroId)}_png.png`);
-      if (existsSync(file)) {
-        const { data, info } = await sharp(file).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-        v = portraitVariants({ width: info.width, height: info.height, data: new Uint8Array(data) });
-      }
+      const picture = pictureOf.get(heroId);
+      const file = join(paths.selection, `npc_dota_hero_${picture}_png.png`);
+      const fromDota = dotaArt !== null && picture !== undefined ? dotaArt.read(picture) : null;
+      try {
+        if (fromDota?.kind === "rgb") v = portraitVariants(fromDota.frame);
+        else if (fromDota !== null || existsSync(file)) {
+          const { data, info } = await sharp(fromDota !== null ? Buffer.from(fromDota.png) : file)
+            .removeAlpha().raw().toBuffer({ resolveWithObject: true });
+          v = portraitVariants({ width: info.width, height: info.height, data: new Uint8Array(data) });
+        }
+      } catch (err) { diag(`[scan] 英雄立绘 ${picture} 解不出来: ${err}`); }
       portraitCache.set(heroId, v);
       return v;
     };
     diag(`[scan] assets OK: 分类器 ${clf.classNames.length} 类, 技能表 ${lookup.size} 条, pHash 索引 ${index ? `${index.length} 条` : "无(不启用第二意见)"}, ` +
-      `英雄立绘 ${existsSync(paths.selection) ? "有" : "无(不认我的英雄)"}`);
+      `英雄立绘 ${localArt ? "有(本地)" : dotaArt !== null ? `有(Dota 资源包,${dotaArt.count} 张)` : "无(不认我的英雄)"}`);
 
     const similar = existsSync(paths.tags) ? buildSimilarMap(loadAbilityTags(paths.tags), lookup) : undefined;
     diag(`[scan] 同类技能表 ${similar ? `${similar.size} 条` : "无"}`);

@@ -129,7 +129,17 @@ docs/       design and implementation plans for each phase
 
 `core` has no Electron dependency, so recognition and scoring are tested in plain Node.
 
-## Running
+## Download and install
+
+No development setup is needed: download the latest `AD-Assistant-Setup-x.y.z.exe` from the [Releases](https://github.com/carlhan0817/AD/releases) page and run it (64-bit Windows 10/11 only).
+
+- **Windows security prompt**: the installer is not code-signed, so the first run shows "Windows protected your PC". Click "More info" → "Run anyway".
+- **Using it**: the app lives in the system tray and has no main window. Run Dota 2 in **borderless window** mode; when you reach the Ability Draft screen, recommendations appear in the top-right corner. `Ctrl+Shift+S` forces a scan at any time. Right-click the tray icon to toggle automatic scanning, enable in-game tracking (启用游戏内追踪), or quit. The tray menu is in Chinese.
+- **What it reads**: read-only. It captures the Dota 2 screen and reads hero portraits from your local Dota install (to recognize the hero you picked); it does not modify any game file. The one exception: if you enable in-game tracking from the tray and confirm, it writes one file into Dota's config folder.
+- **Troubleshooting**: the log is at `%APPDATA%\AD Assistant\ad-assistant.log`; please attach it to issues.
+- **Data version**: win-rate data is a snapshot taken when the installer was built. Download a new installer after a game patch.
+
+## Running from source
 
 Requires Windows and Node.js (developed on 22), with Dota 2 in borderless window mode.
 
@@ -138,7 +148,10 @@ npm install          # install all workspace dependencies
 npm run test:ts      # run all TypeScript tests
 npm run compliance   # compliance red-line scan
 npm run dev          # start the overlay
+npm run dist         # build the Windows installer into app/release/
 ```
+
+Building the installer needs `pipeline/out/reference.db` (generate it with `python -m ad_pipeline build` in `pipeline/`; it is not committed). `npm run dist` stops with an error if it is missing.
 
 Scanning is automatic during the draft (toggle "自动扫描" in the tray menu); `Ctrl+Shift+S` forces a scan at any time. GSI can be enabled from the tray menu (restart Dota once afterwards).
 
@@ -173,11 +186,16 @@ The project moved in phases: write a plan, implement test-first, then verify on 
 - [x] GSI automatic show/hide, memory reset on a new draft
 - [x] Automatic scanning during the draft (no hotkey)
 - [ ] Tune weights from full draft logs
-- [ ] Installer and first-run setup
+- [x] Windows installer (see Download and install)
+- [ ] First-run setup
 - [x] Resolutions other than 1920×1080 (see Supported screens)
 
 ## Credits
 
 - The ability classifier model comes from [ability-draft-plus](https://github.com/Tiarin-Hino/ability-draft-plus) (ISC License, see `models/classifier/LICENSE-ability-draft-plus.txt`).
 - Ability and synergy win-rate data comes from [windrun.io](https://windrun.io).
-- Dota 2 and its game assets are property of Valve Corporation. This project is not affiliated with Valve.
+- Dota 2 and its game assets are property of Valve Corporation. This project is not affiliated with Valve. The installer does not contain any Valve artwork.
+
+## License
+
+The code in this repository is released under the [MIT License](LICENSE).

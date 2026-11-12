@@ -129,7 +129,17 @@ docs/       各阶段设计与实施方案
 
 `core` 不依赖 Electron,所以识别和打分都能在普通 Node 环境下直接测试。
 
-## 运行
+## 下载安装
+
+普通用户不需要装开发环境:到本仓库的 [Releases](https://github.com/carlhan0817/AD/releases) 页面下载最新的 `AD-Assistant-Setup-x.y.z.exe`,双击安装即可(仅支持 64 位 Windows 10/11)。
+
+- **Windows 的安全提示**:安装包没有购买代码签名证书,第一次运行时 Windows 会提示「Windows 已保护你的电脑」。点「更多信息」→「仍要运行」即可。
+- **怎么用**:启动后程序只在右下角托盘里有一个图标,没有主窗口。Dota 2 用**无边框窗口**模式运行,进入技能征召的选人界面后,推荐会自动出现在画面右上角;任何时候按 `Ctrl+Shift+S` 可手动扫描一次。右键托盘图标可以开关自动扫描、启用游戏内追踪、退出。
+- **它会读什么**:只读。程序截取 Dota 2 的画面,并从你本机的 Dota 安装目录里读取英雄立绘(用来认出你选的英雄),不修改任何游戏文件。唯一的例外是你在托盘里手动启用「游戏内追踪」并确认后,它会往 Dota 的配置文件夹写入一个文件。
+- **出了问题**:日志在 `%APPDATA%\AD Assistant\ad-assistant.log`,提 issue 时请附上。
+- **数据版本**:技能胜率数据是打包时的快照,随安装包一起更新;游戏版本更新后请下载新的安装包。
+
+## 从源码运行
 
 需要 Windows、Node.js(开发时用 22);Dota 2 以无边框窗口模式运行。
 
@@ -138,9 +148,12 @@ npm install          # 安装所有 workspace 依赖
 npm run test:ts      # 运行全部 TypeScript 测试
 npm run compliance   # 合规红线扫描
 npm run dev          # 启动悬浮窗
+npm run dist         # 打 Windows 安装包,产物在 app/release/
 ```
 
-选人阶段自动扫描(托盘菜单「自动扫描」开关);任何时候按 `Ctrl+Shift+S` 可手动扫描一次。托盘菜单里可以启用 GSI(启用后需重启 Dota 一次)。
+打安装包前要先有 `pipeline/out/reference.db`(在 `pipeline/` 下运行 `python -m ad_pipeline build` 生成,不入库);缺了 `npm run dist` 会直接报错。
+
+选人阶段自动扫描(托盘菜单「自动扫描」开关);任何时候按 `Ctrl+Shift+S` 可手动扫描一次。托盘菜单里可以启用游戏内追踪(GSI,启用后需重启 Dota 一次)。
 
 ## 支持的屏幕
 
@@ -173,11 +186,16 @@ npm run dev          # 启动悬浮窗
 - [x] GSI 自动显示/隐藏、换局自动清空
 - [x] 选人阶段自动扫描(去掉热键)
 - [ ] 用完整对局记录调优权重
-- [ ] 安装包与首次启动引导
+- [x] Windows 安装包(见「下载安装」)
+- [ ] 首次启动引导
 - [x] 支持 1920×1080 以外的分辨率(见「支持的屏幕」)
 
 ## 致谢
 
 - 技能分类器模型来自 [ability-draft-plus](https://github.com/Tiarin-Hino/ability-draft-plus)(ISC License,见 `models/classifier/LICENSE-ability-draft-plus.txt`)。
 - 技能与搭配胜率数据来自 [windrun.io](https://windrun.io)。
-- Dota 2 及其游戏素材归 Valve Corporation 所有,本项目与 Valve 无关。
+- Dota 2 及其游戏素材归 Valve Corporation 所有,本项目与 Valve 无关。安装包不包含任何 Valve 的美术素材。
+
+## 许可
+
+本项目代码以 [MIT License](LICENSE) 发布。

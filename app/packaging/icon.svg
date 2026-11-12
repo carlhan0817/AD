@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b2433"/>
+      <stop offset="1" stop-color="#0d1118"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#bg)" stroke="#e0a43a" stroke-width="12"/>
+  <!-- 4 格技能位:三个普通 + 一个终极 -->
+  <rect x="96" y="344" width="68" height="68" rx="12" fill="#3b4a63"/>
+  <rect x="180" y="344" width="68" height="68" rx="12" fill="#3b4a63"/>
+  <rect x="264" y="344" width="68" height="68" rx="12" fill="#3b4a63"/>
+  <rect x="348" y="344" width="68" height="68" rx="12" fill="#e0a43a"/>
+  <!-- AD -->
+  <path d="M100 300 L168 108 H212 L280 300 H232 L219 260 H161 L148 300 Z M173 222 H207 L190 168 Z" fill="#f2f4f8"/>
+  <path d="M296 108 H352 C402 108 432 146 432 204 C432 262 402 300 352 300 H296 Z M342 150 V258 H352 C374 258 386 238 386 204 C386 170 374 150 352 150 Z" fill="#f2f4f8"/>
+</svg>
